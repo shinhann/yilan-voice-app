@@ -67,6 +67,11 @@ window.AdminResultsView = function() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState('');
 
+  // 發送成績與評審評語通知信 Modal 狀態
+  const [showResultMailModal, setShowResultMailModal] = useState(false);
+  const [sendingResultMail, setSendingResultMail] = useState(false);
+  const [onlyUnsentResultMail, setOnlyUnsentResultMail] = useState(true);
+
   // 格式化當前列印時間點 (中華民國年、月、日、時、分)
   const getFormattedPrintTime = () => {
     const now = new Date();
@@ -323,7 +328,8 @@ window.AdminResultsView = function() {
         team_id: tid,
         category: selectedCategory,
         school: String(t.school || t.School || ''),
-        team_name: String(t.team_name || t.Team_Name || t.memo || t.Memo || ''),
+        team_name: String(t.team_name || t.Team_Name || (t.group_name !== selectedCategory ? (t.group_name || t.Group_Name || '') : '')),
+        memo: String(t.memo || t.Memo || ''),
         work_title: String(t.work_title || t.Work_Title || ''),
         description: String(t.description || t.Description || ''),
         mindmap_link: String(t.mindmap_link || t.MindMap_Link || ''),
@@ -784,6 +790,22 @@ window.AdminResultsView = function() {
             >
               <span className="material-icons text-base mr-1.5">save</span>
               {saving ? '儲存中...' : '儲存本組得獎名單'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (hasUnsavedChanges) {
+                  alert('⚠️ 請先點擊左方「儲存本組得獎名單」將最新獎項寫入雲端試算表，再發送成績通知信！');
+                  return;
+                }
+                setShowResultMailModal(true);
+              }}
+              disabled={processedGroupData.length === 0}
+              className="bg-indigo-800 hover:bg-indigo-900 disabled:bg-gray-400 text-white px-3.5 py-2 rounded-xl text-sm font-black flex items-center shadow-sm transition cursor-pointer"
+            >
+              <span className="material-icons text-base mr-1.5">campaign</span>
+              發送本組成績通知信
             </button>
 
             <button
@@ -1279,6 +1301,154 @@ window.AdminResultsView = function() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 發送本組「成績公布與評審評語回饋通知信」確認視窗 ==================== */}
+      {showResultMailModal && (
+        <div className="no-print fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border max-w-3xl w-full p-6 space-y-4 text-xs">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div>
+                <h3 className="text-lg font-black text-indigo-950 flex items-center">
+                  <span className="material-icons text-indigo-700 mr-1.5">campaign</span>
+                  發送【{selectedCategory}】成績公布與評審評語通知信
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  將依試算表 Year_Config 之「草稿3：成績公布與評審評語通知」套印各隊榮獲獎項、e幣獎勵、12/20 頒獎邀請（限特優/優等）與三位評審匿名評語
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResultMailModal(false)}
+                className="text-gray-400 hover:text-gray-700 font-black text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-indigo-50 p-3.5 rounded-xl border border-indigo-200 space-y-1.5">
+              <label className="flex items-center space-x-2 cursor-pointer font-black text-indigo-950">
+                <input
+                  type="checkbox"
+                  checked={onlyUnsentResultMail}
+                  onChange={(e) => setOnlyUnsentResultMail(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-900"
+                />
+                <span>防重複寄信保護：僅發送給尚未寄送過「成績通知」的隊伍（推薦勾選）</span>
+              </label>
+              <p className="text-[11px] text-gray-600 pl-6">
+                系統會檢查試算表 Teams 之 AA 欄 (Memo) 是否已有 `[成績通知:...]` 紀錄；取消勾選則會對本組全數隊伍重新發送。
+              </p>
+            </div>
+
+            {(() => {
+              const targetList = processedGroupData.filter(item => {
+                if (onlyUnsentResultMail && String(item.memo || '').includes('[成績通知:')) {
+                  return false;
+                }
+                return true;
+              });
+
+              const handleSendGroupResultEmails = async () => {
+                if (targetList.length === 0) {
+                  alert('目前沒有待發送的隊伍！');
+                  return;
+                }
+                setSendingResultMail(true);
+                const res = await window.ApiService.sendTeamEmails({
+                  year: window.APP_CONFIG.CURRENT_YEAR,
+                  template_type: 'result',
+                  team_ids: targetList.map(item => item.team_id)
+                });
+                setSendingResultMail(false);
+
+                if (res.status === 'success') {
+                  alert(res.message);
+                  setShowResultMailModal(false);
+                  loadAllData();
+                } else {
+                  alert(`❌ 發信失敗：${res.message}`);
+                }
+              };
+
+              return (
+                <>
+                  <div className="space-y-2">
+                    <div className="font-black text-gray-800 flex justify-between items-center">
+                      <span>📋 本組預計發送隊伍與套印獎項預覽（共 {targetList.length} 隊）：</span>
+                      <span className="text-indigo-800">
+                        特優/優等隊伍將自動附帶「12/20 嘉年華頒獎典禮出席邀請」
+                      </span>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto border rounded-xl divide-y bg-gray-50">
+                      {targetList.length === 0 ? (
+                        <div className="p-5 text-center text-gray-400 font-bold">
+                          本組所有隊伍皆已寄送過成績通知信（若需重寄請取消上方勾選）
+                        </div>
+                      ) : (
+                        targetList.map((item) => {
+                          const dec = decisionsMap[item.team_id] || { feature_award: '', rank_award: '' };
+                          const rAward = dec.rank_award || '';
+                          const fAward = dec.feature_award || '';
+                          const isInvited = rAward === '特優' || rAward === '優等';
+                          return (
+                            <div key={item.team_id} className="p-2.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <span className="font-black text-gray-900">{item.school}</span>
+                                {item.team_name && <span className="text-indigo-800 font-bold ml-1">【{item.team_name}】</span>}
+                                <span className="text-gray-600 ml-1.5">《{item.work_title}》</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                {rAward && (
+                                  <span className="px-2 py-0.5 rounded bg-yellow-200 text-yellow-950 font-black border border-yellow-400">
+                                    {rAward}
+                                  </span>
+                                )}
+                                {fAward && (
+                                  <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-950 font-bold border border-teal-300">
+                                    {fAward}
+                                  </span>
+                                )}
+                                {isInvited && (
+                                  <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-900 font-bold border border-rose-300 text-[10px]">
+                                    🎉 含12/20頒獎邀請
+                                  </span>
+                                )}
+                                <span className="text-gray-500 text-[11px]">
+                                  (評語 {item.judgeDetails.filter(d => d.comment).length} 則)
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowResultMailModal(false)}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-bold cursor-pointer"
+                    >
+                      取消
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendGroupResultEmails}
+                      disabled={sendingResultMail || targetList.length === 0}
+                      className="px-6 py-2 bg-indigo-800 hover:bg-indigo-900 disabled:bg-gray-400 text-white rounded-xl font-black shadow-md flex items-center cursor-pointer"
+                    >
+                      <span className="material-icons text-sm mr-1">send</span>
+                      {sendingResultMail ? '正在寄出成績通知信...' : `確認正式寄出 (${targetList.length} 隊)`}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

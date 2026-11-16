@@ -66,6 +66,10 @@ function handleRequest(payload) {
       return processCreateSnapshot(ss, payload);
     case 'exportBackup':
       return processExportBackup(ss, payload);
+    case 'sendTestEmail':
+      return processSendTestEmail(ss, payload);
+    case 'sendTeamEmails':
+      return processSendTeamEmails(ss, payload);
 
     // Judge Management (Service_Judges.js)
     case 'getAllJudges':

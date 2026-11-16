@@ -151,5 +151,15 @@ window.ApiService = {
   // 15. 打包下載本機備份
   async exportBackup(year) {
     return this.request('exportBackup', { year: year || window.APP_CONFIG.CURRENT_YEAR });
+  },
+
+  // 16. 寄送單封測試信 (預覽套印與公用信箱別名測試)
+  async sendTestEmail(payloadData) {
+    return this.request('sendTestEmail', payloadData);
+  },
+
+  // 17. 批次或單隊發送正式通知信 (confirm: 正式參賽 / remind: 補件提醒 / result: 成績評語)
+  async sendTeamEmails(payloadData) {
+    return this.request('sendTeamEmails', payloadData);
   }
 };

@@ -16,7 +16,10 @@ const DB_SCHEMA = {
   ],
   'Year_Config': [
     'Competition_Year', 'Is_Active', 'Rubric_Link', 'Rules_Link', 'System_Lock', 
-    'Category_Group_Map', 'Email_Template_Subject', 'Email_Template_Body'
+    'Category_Group_Map', 'Email_Sender_Config',
+    'Email_Confirm_Subject', 'Email_Confirm_Body',
+    'Email_Remind_Subject', 'Email_Remind_Body',
+    'Email_Result_Subject', 'Email_Result_Body'
   ],
   'Teams': [
     'Team_ID', 'Competition_Year', 'Category', 'Group_Name', 'School', 'Work_Title', 'Description',
@@ -24,7 +27,8 @@ const DB_SCHEMA = {
     'Teacher1_Name', 'Teacher1_Email', 'Teacher2_Name', 'Teacher2_Email',
     'Contact_Person', 'Contact_Phone',
     'MindMap_Link', 'Slides_Link', 'Video_Link', 'Consent_Link', 'Course_Plan_Link', 'Drive_Link',
-    'Link_Note', 'Memo'
+    'Link_Note', 'Memo',
+    'Student1_Class', 'Student2_Class', 'Student3_Class', 'Teacher2_Phone'
   ],
   'Scores': [
     'Competition_Year', 'Category', 'Group_Name', 'Team_ID', 'Judge_Code',
