@@ -1,25 +1,26 @@
-/* 簡報達人評分系統 115學年度 - 核心設計系統 */
+/* 簡報達人評分系統 115學年度 - 宜蘭山海水漾核心設計系統 (Yilan Water & Mountain Theme) */
 :root {
-  --primary: #3E2723;       /* 暖深棕色 (Warm Dark Brown) */
-  --primary-hover: #2C1B18;
-  --secondary: #D84315;     /* 赤陶紅 (Terracotta Accent) */
-  --secondary-hover: #BF360C;
-  --bg-light: #F8F6F0;      /* 柔和米亮灰 (Soft Warm Light Gray) */
-  --card-bg: #FFFFFF;
-  --text-dark: #212121;
-  --text-muted: #666666;
-  --border-color: #E0DCD3;
+  --primary: #0F2942;       /* 太平洋黛青 / 龜山黛藍 (Deep Ocean Indigo) */
+  --primary-hover: #081B2D;
+  --secondary: #059669;     /* 蘭陽湧泉翡翠綠 (Yilan Spring Emerald) */
+  --secondary-hover: #047857;
+  --accent-gold: #D97706;   /* 雨後金棗黃 / 稻浪暖金 (Kumquat Amber) */
+  --bg-light: #F8FAFC;      /* 晨霧水漾微藍白 (Mist Ice Slate) */
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --text-dark: #0F172A;     /* Slate 900 */
+  --text-muted: #64748B;    /* Slate 500 */
+  --border-color: #E2E8F0;  /* Slate 200 */
   
   /* 狀態燈號顏色 */
-  --status-submitted: #2E7D32;  /* 🟢 完稿 */
-  --status-draft: #F57F17;      /* 🟡 暫存 */
-  --status-unrated: #757575;    /* ⚪ 未評 */
-  --status-error: #C62828;      /* 🔴 錯誤 */
+  --status-submitted: #059669;  /* 🟢 完稿 */
+  --status-draft: #D97706;      /* 🟡 暫存 */
+  --status-unrated: #64748B;    /* ⚪ 未評 */
+  --status-error: #E11D48;      /* 🔴 錯誤 */
   
   /* 獎項視覺顏色 */
-  --award-top: #FFD700;         /* 🥇 特優 (Gold) */
-  --award-excellent: #C0C0C0;   /* 🥈 優等 (Silver) */
-  --award-star: #FF9800;        /* ✨ 簡報之星/學習之星 (Bronze/Orange) */
+  --award-top: #F59E0B;         /* 🥇 特優 (Gold) */
+  --award-excellent: #94A3B8;   /* 🥈 優等 (Silver) */
+  --award-star: #D97706;        /* ✨ 簡報之星/學習之星 (Bronze/Orange) */
 }
 
 /* 全域基礎重置 */
@@ -32,17 +33,31 @@ body {
   min-height: 100vh;
 }
 
-/* 玻璃擬物風格卡片 (Glassmorphism & Card style) */
+/* 現代水漾毛玻璃卡片 (Glassmorphism & Card style) */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s ease-in-out;
+}
+
+.glass-panel:hover {
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+}
+
 .card-warm {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease-in-out;
 }
 
 .card-warm:hover {
-  box-shadow: 0 6px 16px rgba(62, 39, 35, 0.08);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 /* 狀態標籤與 Badges */

@@ -527,15 +527,15 @@ window.JudgeView = function({ user, onLogout }) {
           主工作台外層 (當開啟評分表列印時標記 no-print，確保列印只印評分表)
          ========================================================= */}
       <div className="no-print flex-1 flex flex-col min-h-screen">
-        {/* 1. App Bar 頂部導覽列 (列印總表按鈕唯一入口，與同步、登出並列) */}
-        <header className="bg-amber-950 text-white px-6 py-3.5 shadow-md flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3">
+        {/* 1. App Bar 頂部導覽列：太平洋深黛青透光毛玻璃風格 */}
+        <header className="bg-slate-900/90 backdrop-blur-md text-white px-6 py-3.5 shadow-md flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 border-b border-slate-800/80 sticky top-0 z-40">
           <div className="flex items-center space-x-3">
-            <span className="material-icons text-amber-400 text-3xl">workspace_premium</span>
+            <span className="material-icons text-teal-400 text-3xl">workspace_premium</span>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-wide">
+              <h1 className="text-lg sm:text-xl font-black tracking-wide text-white">
                 115學年度 簡報達人評分系統 — {judgeName} (代號 {judgeCode})
               </h1>
-              <p className="text-sm text-amber-200 font-medium">
+              <p className="text-sm text-teal-200/90 font-medium">
                 負責評審組別：{allowedGroupList.join('、')}
               </p>
             </div>
@@ -543,8 +543,8 @@ window.JudgeView = function({ user, onLogout }) {
 
           <div className="flex flex-wrap items-center gap-2.5">
             {/* 簡潔三段字體切換器：只顯示「小、中、大」 */}
-            <div className="flex items-center bg-amber-900/90 border border-amber-700 rounded-xl p-1 mr-1">
-              <span className="text-sm text-amber-200 font-bold px-2 flex items-center">
+            <div className="flex items-center bg-slate-800/80 border border-slate-700/80 rounded-xl p-1 mr-1">
+              <span className="text-sm text-slate-300 font-bold px-2 flex items-center">
                 <span className="material-icons text-base mr-1">format_size</span>字體：
               </span>
               {[
@@ -558,8 +558,8 @@ window.JudgeView = function({ user, onLogout }) {
                   onClick={() => handleChangeFontScale(opt.id)}
                   className={`px-3 py-1 rounded-lg text-sm font-black transition cursor-pointer ${
                     fontScale === opt.id
-                      ? 'bg-amber-400 text-amber-950 shadow-xs'
-                      : 'text-amber-100 hover:bg-amber-800'
+                      ? 'bg-teal-500 text-slate-950 shadow-xs'
+                      : 'text-slate-300 hover:bg-slate-700/80'
                   }`}
                 >
                   {opt.label}
@@ -567,10 +567,10 @@ window.JudgeView = function({ user, onLogout }) {
               ))}
             </div>
 
-            {/* 單一列印總表按鈕 (僅保留一個印表機圖示) */}
+            {/* 單一列印總表按鈕 */}
             <button
               onClick={() => setPrintSheetOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm px-4 py-2 rounded-lg flex items-center shadow-sm transition cursor-pointer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm px-4 py-2 rounded-xl flex items-center shadow-sm transition cursor-pointer"
             >
               <span className="material-icons text-base mr-1.5">print</span>
               本組評分總表 (簽名單)
@@ -578,7 +578,7 @@ window.JudgeView = function({ user, onLogout }) {
 
             <button
               onClick={() => setRubricDrawerOpen(true)}
-              className="bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-sm px-4 py-2 rounded-lg flex items-center shadow-sm transition cursor-pointer"
+              className="bg-teal-700 hover:bg-teal-600 text-white font-black text-sm px-4 py-2 rounded-xl flex items-center shadow-sm transition cursor-pointer"
             >
               <span className="material-icons text-base mr-1.5">menu_book</span>
               查看評分標準規準
@@ -586,26 +586,26 @@ window.JudgeView = function({ user, onLogout }) {
 
             <button
               onClick={loadData}
-              className="bg-amber-900 hover:bg-amber-800 text-amber-100 text-sm px-3.5 py-2 rounded-lg flex items-center font-semibold transition cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm px-3.5 py-2 rounded-xl flex items-center font-bold border border-slate-700 transition cursor-pointer"
             >
               <span className="material-icons text-base mr-1">refresh</span>同步雲端
             </button>
 
             <button
               onClick={onLogout}
-              className="bg-red-700 hover:bg-red-800 text-white text-sm px-3.5 py-2 rounded-lg flex items-center font-bold transition shadow-xs cursor-pointer"
+              className="bg-rose-700 hover:bg-rose-800 text-white text-sm px-3.5 py-2 rounded-xl flex items-center font-bold transition shadow-xs cursor-pointer"
             >
               <span className="material-icons text-base mr-1">logout</span>登出
             </button>
           </div>
         </header>
 
-        {/* 2. 組別切換、隊伍快速跳轉 (上一隊/下一隊/下拉) 與進度條 */}
-        <div className="bg-white border-b px-4 lg:px-6 py-2.5 flex flex-wrap justify-between items-center gap-3 shadow-2xs">
+        {/* 2. 組別切換、隊伍快速跳轉 (上一隊/下一隊/下拉) 與進度條：清晨霧白透光毛玻璃 */}
+        <div className="bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-6 py-2.5 flex flex-wrap justify-between items-center gap-3 shadow-2xs sticky top-[61px] z-30">
           {/* 左區：組別切換 + 隊伍總覽展開/收合開關 */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm sm:text-base font-bold text-gray-800 flex items-center">
-              <span className="material-icons text-base sm:text-lg mr-1 text-amber-900">folder_special</span>
+            <span className="text-sm sm:text-base font-bold text-slate-700 flex items-center">
+              <span className="material-icons text-base sm:text-lg mr-1 text-teal-800">folder_special</span>
               組別：
             </span>
             {allowedGroupList.map(g => (
@@ -619,10 +619,10 @@ window.JudgeView = function({ user, onLogout }) {
                   });
                   handleSafeSwitchTeam(firstInGroup ? (firstInGroup.team_id || firstInGroup.Team_ID) : '', g);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-sm sm:text-base font-bold transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-sm sm:text-base font-bold transition cursor-pointer ${
                   selectedGroup === g
-                    ? 'bg-amber-900 text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    ? 'bg-teal-800 text-white shadow-xs'
+                    : 'bg-slate-100/80 text-slate-700 hover:bg-slate-200/80'
                 }`}
               >
                 {g}
@@ -633,10 +633,10 @@ window.JudgeView = function({ user, onLogout }) {
             <button
               type="button"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className={`ml-1 px-3 py-1.5 rounded-lg text-sm sm:text-base font-bold flex items-center transition cursor-pointer border ${
+              className={`ml-1 px-3 py-1.5 rounded-xl text-sm sm:text-base font-bold flex items-center transition cursor-pointer border ${
                 isSidebarOpen
-                  ? 'bg-amber-100 text-amber-950 border-amber-300'
-                  : 'bg-stone-50 text-stone-700 hover:bg-stone-100 border-stone-300'
+                  ? 'bg-teal-50 text-teal-950 border-teal-300'
+                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-300'
               }`}
               title={isSidebarOpen ? "收合左側隊伍清單" : "展開左側隊伍清單"}
             >
@@ -648,15 +648,15 @@ window.JudgeView = function({ user, onLogout }) {
           </div>
 
           {/* 中區：上一隊 / 下拉選單 / 下一隊 */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-stone-100/90 p-1 rounded-xl border border-stone-300">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
             <button
               type="button"
               disabled={!prevTeam}
               onClick={() => prevTeam && handleSafeSwitchTeam(prevTeam.team_id || prevTeam.Team_ID)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-sm sm:text-base font-black flex items-center transition ${
                 prevTeam
-                  ? 'bg-white hover:bg-amber-50 text-amber-950 shadow-2xs cursor-pointer border border-stone-200'
-                  : 'text-gray-400 cursor-not-allowed opacity-60'
+                  ? 'bg-white hover:bg-teal-50 text-slate-900 shadow-2xs cursor-pointer border border-slate-200'
+                  : 'text-slate-400 cursor-not-allowed opacity-60'
               }`}
               title={prevTeam ? `切換至上一隊：${prevTeam.work_title || prevTeam.Work_Title}` : '已是本組第一隊'}
             >
@@ -669,7 +669,7 @@ window.JudgeView = function({ user, onLogout }) {
               <select
                 value={activeTeam ? (activeTeam.team_id || activeTeam.Team_ID) : ''}
                 onChange={(e) => handleSafeSwitchTeam(e.target.value)}
-                className="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] bg-white border border-stone-300 text-stone-900 text-sm sm:text-base font-black rounded-lg py-1.5 pl-2.5 pr-8 focus:ring-2 focus:ring-amber-900 focus:outline-none truncate cursor-pointer shadow-2xs"
+                className="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] bg-white border border-slate-300 text-slate-900 text-sm sm:text-base font-black rounded-lg py-1.5 pl-2.5 pr-8 focus:ring-2 focus:ring-teal-700 focus:outline-none truncate cursor-pointer shadow-2xs"
               >
                 {filteredTeams.map((team, idx) => {
                   const tid = team.team_id || team.Team_ID;
@@ -694,8 +694,8 @@ window.JudgeView = function({ user, onLogout }) {
               onClick={() => nextTeam && handleSafeSwitchTeam(nextTeam.team_id || nextTeam.Team_ID)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-sm sm:text-base font-black flex items-center transition ${
                 nextTeam
-                  ? 'bg-white hover:bg-amber-50 text-amber-950 shadow-2xs cursor-pointer border border-stone-200'
-                  : 'text-gray-400 cursor-not-allowed opacity-60'
+                  ? 'bg-white hover:bg-teal-50 text-slate-900 shadow-2xs cursor-pointer border border-slate-200'
+                  : 'text-slate-400 cursor-not-allowed opacity-60'
               }`}
               title={nextTeam ? `切換至下一隊：${nextTeam.work_title || nextTeam.Work_Title}` : '已是本組最後一隊'}
             >
@@ -706,10 +706,10 @@ window.JudgeView = function({ user, onLogout }) {
 
           {/* 右區：進度統計 */}
           <div className="flex items-center space-x-2.5 text-sm sm:text-base">
-            <span className="text-gray-800 font-bold">
+            <span className="text-slate-800 font-bold">
               完稿進度：<strong className="text-emerald-700 text-base sm:text-lg font-black">{savedCount}</strong> / {filteredTeams.length} 隊
             </span>
-            <div className="w-24 sm:w-28 h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-24 sm:w-28 h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-600 transition-all duration-300"
                 style={{ width: `${filteredTeams.length > 0 ? (savedCount / filteredTeams.length) * 100 : 0}%` }}
@@ -748,23 +748,23 @@ window.JudgeView = function({ user, onLogout }) {
           
           {/* 左側欄：隊伍清單與即時序位 (可展開/收合) */}
           {isSidebarOpen && (
-            <div className={`${uiScale.sidebarWidth} bg-white rounded-xl border shadow-xs flex flex-col overflow-hidden shrink-0 transition-all duration-200`}>
-              <div className="p-3.5 bg-amber-50/70 border-b flex justify-between items-center">
-                <span className={`${uiScale.sidebarHeader} font-black text-amber-950`}>
+            <div className={`${uiScale.sidebarWidth} bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xs flex flex-col overflow-hidden shrink-0 transition-all duration-200`}>
+              <div className="p-3.5 bg-slate-50/80 border-b border-slate-200/80 flex justify-between items-center">
+                <span className={`${uiScale.sidebarHeader} font-black text-slate-900`}>
                   {selectedGroup} ({filteredTeams.length} 隊)
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen(false)}
-                  className="text-xs text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-1 rounded font-bold transition cursor-pointer"
+                  className="text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded font-bold transition cursor-pointer"
                   title="收合隊伍列表"
                 >
                   ◀ 點此收合
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto divide-y divide-gray-200 max-h-[380px] lg:max-h-none">
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[380px] lg:max-h-none">
                 {filteredTeams.length === 0 ? (
-                  <div className="p-8 text-center text-base text-gray-500 font-bold">此組別目前尚無參賽隊伍</div>
+                  <div className="p-8 text-center text-base text-slate-500 font-bold">此組別目前尚無參賽隊伍</div>
                 ) : (
                   filteredTeams.map((team, idx) => {
                     const tid = team.team_id || team.Team_ID;
@@ -781,30 +781,30 @@ window.JudgeView = function({ user, onLogout }) {
                         onClick={() => handleSafeSwitchTeam(tid)}
                         className={`p-4 cursor-pointer transition flex justify-between items-start gap-3 ${
                           isSelected
-                            ? 'bg-amber-100/80 border-l-8 border-amber-900'
+                            ? 'bg-emerald-50/90 border-l-8 border-emerald-700'
                             : idx % 2 === 1
-                            ? 'bg-stone-50/70 hover:bg-amber-50/40'
-                            : 'bg-white hover:bg-amber-50/40'
+                            ? 'bg-slate-50/40 hover:bg-emerald-50/30'
+                            : 'bg-white hover:bg-emerald-50/30'
                         }`}
                       >
                         <div className="space-y-1.5 min-w-0 flex-1">
                           {/* 第一行：隊伍序號 + 學校與隊伍名稱 */}
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className={`${uiScale.teamIdxBadge} font-mono font-black bg-amber-900 text-white rounded-md shrink-0`}>
+                            <span className={`${uiScale.teamIdxBadge} font-mono font-black bg-slate-800 text-white rounded-md shrink-0`}>
                               第 {String(idx + 1).padStart(2, '0')} 隊
                             </span>
-                            <span className={`${uiScale.teamSchool} text-gray-700 font-bold break-words`}>
+                            <span className={`${uiScale.teamSchool} text-slate-700 font-bold break-words`}>
                               {schoolName}{teamName ? `【${teamName}】` : ''}
                             </span>
                           </div>
 
                           {/* 第二行：作品標題 */}
-                          <p className={`font-black ${uiScale.teamTitle} text-gray-950 line-clamp-2 pt-0.5`}>
+                          <p className={`font-black ${uiScale.teamTitle} text-slate-950 line-clamp-2 pt-0.5`}>
                             {team.work_title || team.Work_Title}
                           </p>
 
                           {sc && sc.award && (
-                            <span className="inline-block text-sm px-2.5 py-0.5 bg-amber-200 text-amber-950 rounded-md font-black">
+                            <span className="inline-block text-sm px-2.5 py-0.5 bg-amber-100 text-amber-950 rounded-md font-black">
                               ✨ 推薦：{sc.award}
                             </span>
                           )}
@@ -814,21 +814,21 @@ window.JudgeView = function({ user, onLogout }) {
                         <div className="text-right shrink-0 space-y-1.5 pl-1">
                           {teamTotal !== null ? (
                             <div>
-                              <span className={`${uiScale.teamScore} font-black text-amber-900`}>{teamTotal}</span>
-                              <span className="text-sm text-gray-600 font-bold ml-0.5">分</span>
+                              <span className={`${uiScale.teamScore} font-black text-emerald-800`}>{teamTotal}</span>
+                              <span className="text-sm text-slate-600 font-bold ml-0.5">分</span>
                               {rank && (
-                                <div className={`${uiScale.teamRank} font-black text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 mt-0.5`}>
+                                <div className={`${uiScale.teamRank} font-black text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 mt-0.5`}>
                                   序位第 {rank}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="text-base text-gray-400 font-mono font-bold">-- 分</div>
+                            <div className="text-base text-slate-400 font-mono font-bold">-- 分</div>
                           )}
 
                           <div>
                             {!sc ? (
-                              <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-gray-100 text-gray-600 border border-gray-300`}>
+                              <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-300`}>
                                 ⚪ 未評
                               </span>
                             ) : sc.status === 'saved' ? (
@@ -858,13 +858,13 @@ window.JudgeView = function({ user, onLogout }) {
                 {/* 左半部 (xl:col-span-6)：作品資料、檔案膠囊按鈕、作品說明、影片播放器 */}
                 <div className="xl:col-span-6 space-y-4">
                   {/* 作品標題與檔案膠囊區 */}
-                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-3">
+                  <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-950 rounded-lg text-sm font-bold">
+                        <span className="px-2.5 py-0.5 bg-teal-50 text-teal-950 border border-teal-200/80 rounded-lg text-sm font-bold">
                           {activeTeam.category || activeTeam.Category || activeTeam.group_name || activeTeam.Group_Name}
                         </span>
-                        <span className="text-base sm:text-lg font-bold text-gray-800">
+                        <span className="text-base sm:text-lg font-bold text-slate-800">
                           🏫 {activeTeam.school || activeTeam.School}
                           {(activeTeam.team_name || activeTeam.Team_Name) ? ` 【${activeTeam.team_name || activeTeam.Team_Name}】` : ''}
                         </span>
@@ -887,7 +887,7 @@ window.JudgeView = function({ user, onLogout }) {
                     </div>
 
                     {/* 作品標題 */}
-                    <h2 className={`${uiScale.cardTitle} font-black text-gray-950 leading-snug`}>
+                    <h2 className={`${uiScale.cardTitle} font-black text-slate-950 leading-snug`}>
                       {activeTeam.work_title || activeTeam.Work_Title}
                     </h2>
 
@@ -903,7 +903,7 @@ window.JudgeView = function({ user, onLogout }) {
                           🧠 Mindomo 心智圖 ↗
                         </a>
                       ) : (
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold">無心智圖</span>
+                        <span className="px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg text-xs font-bold">無心智圖</span>
                       )}
 
                       {(activeTeam.Slides_Link || activeTeam.slides_link) ? (
@@ -916,7 +916,7 @@ window.JudgeView = function({ user, onLogout }) {
                           📊 簡報檔案 ↗
                         </a>
                       ) : (
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold">無簡報檔</span>
+                        <span className="px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg text-xs font-bold">無簡報檔</span>
                       )}
 
                       {rawVideoUrl && (
@@ -924,7 +924,7 @@ window.JudgeView = function({ user, onLogout }) {
                           href={rawVideoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-red-50 text-red-900 rounded-lg border border-red-300 hover:bg-red-100 text-sm font-black flex items-center transition shadow-2xs"
+                          className="px-3 py-1.5 bg-rose-50 text-rose-950 rounded-lg border border-rose-300 hover:bg-rose-100 text-sm font-black flex items-center transition shadow-2xs"
                         >
                           🎬 另開影片播放 ↗
                         </a>
@@ -935,7 +935,7 @@ window.JudgeView = function({ user, onLogout }) {
                           href={activeTeam.Course_Plan_Link || activeTeam.course_plan_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-purple-50 text-purple-950 rounded-lg border border-purple-300 hover:bg-purple-100 text-sm font-black flex items-center transition shadow-2xs"
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-950 rounded-lg border border-indigo-300 hover:bg-indigo-100 text-sm font-black flex items-center transition shadow-2xs"
                         >
                           📑 校訂課程計畫 PDF ↗
                         </a>
@@ -968,16 +968,16 @@ window.JudgeView = function({ user, onLogout }) {
 
                     {/* 作品說明 (手風琴展開/收合) */}
                     {activeDesc ? (
-                      <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-sm sm:text-base text-gray-800 space-y-1">
+                      <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/80 text-sm sm:text-base text-slate-800 space-y-1">
                         <div className={`whitespace-pre-wrap ${descExpanded ? '' : 'line-clamp-2'}`}>
-                          <strong className="text-gray-900 mr-1">📝 作品說明：</strong>
+                          <strong className="text-slate-900 mr-1">📝 作品說明：</strong>
                           {activeDesc}
                         </div>
                         {activeDesc.length > 50 && (
                           <button
                             type="button"
                             onClick={() => setDescExpanded(!descExpanded)}
-                            className="text-xs sm:text-sm text-amber-900 font-bold flex items-center pt-0.5 hover:underline cursor-pointer"
+                            className="text-xs sm:text-sm text-teal-800 font-bold flex items-center pt-0.5 hover:underline cursor-pointer"
                           >
                             <span className="material-icons text-base mr-0.5">
                               {descExpanded ? 'expand_less' : 'expand_more'}
@@ -990,10 +990,10 @@ window.JudgeView = function({ user, onLogout }) {
                   </div>
 
                   {/* 影片播放區 (純淨播放器，無冗贅警語) */}
-                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-3">
+                  <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center">
-                        <span className="material-icons text-red-600 mr-1.5 text-2xl">smart_display</span>
+                      <h3 className="font-black text-slate-900 text-lg sm:text-xl flex items-center">
+                        <span className="material-icons text-rose-600 mr-1.5 text-2xl">smart_display</span>
                         參賽作品發表影片
                       </h3>
                       {rawVideoUrl && (
@@ -1001,7 +1001,7 @@ window.JudgeView = function({ user, onLogout }) {
                           href={rawVideoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs sm:text-sm text-red-700 hover:text-red-900 font-bold flex items-center hover:underline"
+                          className="text-xs sm:text-sm text-rose-700 hover:text-rose-900 font-bold flex items-center hover:underline"
                         >
                           另開視窗觀看 ↗
                         </a>
@@ -1009,7 +1009,7 @@ window.JudgeView = function({ user, onLogout }) {
                     </div>
 
                     {embedUrl ? (
-                      <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-md border border-gray-300">
+                      <div className="aspect-video w-full bg-slate-950 rounded-xl overflow-hidden shadow-md border border-slate-300">
                         <iframe
                           src={embedUrl}
                           title="參賽作品發表影片"
@@ -1019,7 +1019,7 @@ window.JudgeView = function({ user, onLogout }) {
                         />
                       </div>
                     ) : (
-                      <div className="p-8 text-center bg-gray-50 border rounded-xl text-gray-500 font-bold text-base">
+                      <div className="p-8 text-center bg-slate-50 border rounded-xl text-slate-500 font-bold text-base">
                         ⚠️ 此隊伍尚未提供發表影片連結
                       </div>
                     )}
@@ -1029,18 +1029,18 @@ window.JudgeView = function({ user, onLogout }) {
                 {/* 右半部 (xl:col-span-6)：指標評量、特色推薦、評語與提交 */}
                 <div className="xl:col-span-6 space-y-4">
                   {/* 四項指標配分評量 */}
-                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-4">
+                  <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3.5">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center">
-                            <span className="material-icons text-amber-900 mr-1.5 text-xl">tune</span>
+                          <h3 className="font-black text-slate-900 text-lg sm:text-xl flex items-center">
+                            <span className="material-icons text-teal-800 mr-1.5 text-xl">tune</span>
                             四項指標配分評量
                           </h3>
                           <button
                             type="button"
                             onClick={() => setRubricDrawerOpen(true)}
-                            className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-xs sm:text-sm font-bold flex items-center transition cursor-pointer"
+                            className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 rounded-lg text-xs sm:text-sm font-bold flex items-center transition cursor-pointer"
                           >
                             <span className="material-icons text-base mr-1">help_outline</span>
                             評分規準細項
@@ -1049,10 +1049,10 @@ window.JudgeView = function({ user, onLogout }) {
                       </div>
 
                       {/* 合計總分卡 */}
-                      <div className="text-right bg-amber-50 px-4 py-2 rounded-xl border-2 border-amber-300 shrink-0">
-                        <span className="text-xs font-bold text-amber-900 block">目前合計總分</span>
-                        <div className="text-2xl sm:text-3xl font-black text-amber-900">
-                          {calculateTotal(currentScore)} <span className="text-sm font-bold text-gray-600">/ 100 分</span>
+                      <div className="text-right bg-emerald-50/90 px-4 py-2 rounded-2xl border-2 border-emerald-400 text-emerald-950 shrink-0">
+                        <span className="text-xs font-bold text-emerald-800 block">目前合計總分</span>
+                        <div className="text-2xl sm:text-3xl font-black text-emerald-950">
+                          {calculateTotal(currentScore)} <span className="text-sm font-bold text-slate-600">/ 100 分</span>
                         </div>
                       </div>
                     </div>
@@ -1091,27 +1091,27 @@ window.JudgeView = function({ user, onLogout }) {
                       ].map(item => {
                         const val = Number(currentScore[item.key] ?? 0);
                         return (
-                          <div key={item.key} className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                          <div key={item.key} className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-2">
                             <div className="flex justify-between items-center gap-2">
                               <div className="flex items-center">
-                                <span className={`${uiScale.sliderLabel} font-black text-gray-900`}>
+                                <span className={`${uiScale.sliderLabel} font-black text-slate-900`}>
                                   {item.label}
                                 </span>
                                 {/* Hover Tooltip 顯示詳細規準 */}
                                 <div className="relative group inline-flex items-center ml-1.5 cursor-help">
-                                  <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
-                                  <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                                  <span className="material-icons text-base text-slate-400 group-hover:text-teal-800 transition-colors">info_outline</span>
+                                  <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
                                     💡 評分細項參考：<br />{item.desc}
                                   </div>
                                 </div>
                               </div>
 
                               {/* 微調輸入框 */}
-                              <div className="flex items-center space-x-1 shrink-0 bg-white p-1 rounded-lg border shadow-2xs">
+                              <div className="flex items-center space-x-1 shrink-0 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
                                 <button
                                   type="button"
                                   onClick={() => updateScoreField(item.key, val - 1)}
-                                  className="w-8 h-8 rounded bg-gray-100 hover:bg-gray-200 text-base font-black flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 text-base font-black flex items-center justify-center cursor-pointer text-slate-700"
                                 >
                                   -
                                 </button>
@@ -1122,12 +1122,12 @@ window.JudgeView = function({ user, onLogout }) {
                                   step="0.5"
                                   value={val}
                                   onChange={(e) => updateScoreField(item.key, e.target.value)}
-                                  className={`${uiScale.sliderInput} text-center font-black text-amber-900 bg-white focus:outline-none`}
+                                  className={`${uiScale.sliderInput} text-center font-black text-emerald-950 bg-white focus:outline-none`}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => updateScoreField(item.key, val + 1)}
-                                  className="w-8 h-8 rounded bg-gray-100 hover:bg-gray-200 text-base font-black flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded bg-slate-100 hover:bg-slate-200 text-base font-black flex items-center justify-center cursor-pointer text-slate-700"
                                 >
                                   +
                                 </button>
@@ -1142,9 +1142,9 @@ window.JudgeView = function({ user, onLogout }) {
                               step="0.5"
                               value={val}
                               onChange={(e) => updateScoreField(item.key, e.target.value)}
-                              className="w-full h-2.5 accent-amber-900 cursor-pointer"
+                              className="w-full h-2.5 accent-emerald-700 cursor-pointer"
                             />
-                            <div className="flex justify-between text-xs text-gray-500 font-bold font-mono px-0.5">
+                            <div className="flex justify-between text-xs text-slate-500 font-bold font-mono px-0.5">
                               {item.ticks.map(tk => (
                                 <span key={tk}>{tk}分</span>
                               ))}
@@ -1156,21 +1156,21 @@ window.JudgeView = function({ user, onLogout }) {
                   </div>
 
                   {/* 質性評語與特色推薦 + 儲存提交 */}
-                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-4">
-                    <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center border-b pb-2.5">
-                      <span className="material-icons text-amber-900 mr-1.5 text-xl">rate_review</span>
+                  <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <h3 className="font-black text-slate-900 text-lg sm:text-xl flex items-center border-b pb-2.5">
+                      <span className="material-icons text-teal-800 mr-1.5 text-xl">rate_review</span>
                       質性評語與特色推薦
                     </h3>
 
                     {/* 特色表現獎推薦 (修正說明文字，改為 Hover 提示) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center">
-                        <label className="text-sm sm:text-base font-bold text-gray-900">
+                        <label className="text-sm sm:text-base font-bold text-slate-900">
                           ✨ 特色表現獎推薦 (選填)
                         </label>
                         <div className="relative group inline-flex items-center ml-1.5 cursor-help">
-                          <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
-                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-80 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                          <span className="material-icons text-base text-slate-400 group-hover:text-teal-800 transition-colors">info_outline</span>
+                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-80 p-2.5 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
                             💡 推薦規則：<br />
                             • 表現亮眼或達優良水準者，推薦為「<strong>簡報之星</strong>」<br />
                             • 具備良好參與水準與學習態度者，推薦為「<strong>學習之星</strong>」<br />
@@ -1181,7 +1181,7 @@ window.JudgeView = function({ user, onLogout }) {
                       <select
                         value={currentScore.award || ''}
                         onChange={(e) => updateScoreField('award', e.target.value)}
-                        className="w-full p-2.5 text-base border rounded-xl bg-white font-bold text-gray-900 shadow-2xs focus:ring-2 focus:ring-amber-900 focus:outline-none"
+                        className="w-full p-2.5 text-base border border-slate-300 rounded-xl bg-white font-bold text-slate-900 shadow-2xs focus:ring-2 focus:ring-emerald-700 focus:outline-none"
                       >
                         <option value="">-- 無特別推薦 --</option>
                         <option value="簡報之星">✨ 簡報之星 (表現亮眼 / 達優良水準)</option>
@@ -1192,12 +1192,12 @@ window.JudgeView = function({ user, onLogout }) {
                     {/* 評審評語與建議 (說明文字改為 Hover 提示) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center">
-                        <label className="text-sm sm:text-base font-bold text-gray-900">
+                        <label className="text-sm sm:text-base font-bold text-slate-900">
                           💬 評審評語與寶貴建議
                         </label>
                         <div className="relative group inline-flex items-center ml-1.5 cursor-help">
-                          <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
-                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                          <span className="material-icons text-base text-slate-400 group-hover:text-teal-800 transition-colors">info_outline</span>
+                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
                             💡 評語將完整呈現於評分總表，並匿名提供參賽學生作為學習反饋。
                           </div>
                         </div>
@@ -1207,7 +1207,7 @@ window.JudgeView = function({ user, onLogout }) {
                         value={currentScore.comment || ''}
                         onChange={(e) => updateScoreField('comment', e.target.value)}
                         placeholder="請輸入對參賽學生的鼓勵、作品亮點或具體改進建議..."
-                        className={`w-full p-3 ${uiScale.commentText} border rounded-xl focus:ring-2 focus:ring-amber-900 focus:outline-none`}
+                        className={`w-full p-3 ${uiScale.commentText} border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-700 focus:outline-none`}
                       />
                     </div>
 
@@ -1219,7 +1219,7 @@ window.JudgeView = function({ user, onLogout }) {
                             🟢 此隊伍評分已安全儲存於雲端 (總分：{calculateTotal(currentScore)} 分)
                           </span>
                         ) : (
-                          <span className="text-amber-900 font-bold flex items-center">
+                          <span className="text-amber-800 font-bold flex items-center">
                             🟡 已調整評分 (已暫存本機)，請點擊右側儲存寫入雲端！
                           </span>
                         )}
@@ -1229,8 +1229,7 @@ window.JudgeView = function({ user, onLogout }) {
                         type="button"
                         onClick={() => handleSubmitScore(false)}
                         disabled={saving}
-                        className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-black text-base shadow-md hover:opacity-95 transition flex items-center justify-center cursor-pointer shrink-0"
-                        style={{ backgroundColor: 'var(--secondary)' }}
+                        className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-black text-base shadow-md hover:opacity-95 transition flex items-center justify-center cursor-pointer shrink-0 bg-emerald-700 hover:bg-emerald-800"
                       >
                         <span className={`material-icons text-xl mr-1.5 ${saving ? 'animate-spin' : ''}`}>
                           {saving ? 'sync' : 'cloud_upload'}
