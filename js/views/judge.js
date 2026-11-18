@@ -220,9 +220,11 @@ window.JudgeView = function({ user, onLogout }) {
         const firstInGroup = authorizedTeams.find(t => {
           const cat = String(t.category || t.Category || t.group_name || t.Group_Name || '').trim();
           return cat === defaultGroup || cat.includes(defaultGroup);
-        }) || authorizedTeams[0];
+        }) || null;
         if (firstInGroup) {
           setActiveTeamId(firstInGroup.team_id || firstInGroup.Team_ID);
+        } else {
+          setActiveTeamId('');
         }
       }
     } catch (err) {
@@ -287,7 +289,7 @@ window.JudgeView = function({ user, onLogout }) {
     return map;
   }, [filteredTeams, scoresMap]);
 
-  const activeTeam = teams.find(t => (t.team_id || t.Team_ID) === activeTeamId) || filteredTeams[0];
+  const activeTeam = filteredTeams.find(t => (t.team_id || t.Team_ID) === activeTeamId) || filteredTeams[0] || null;
 
   const currentTeamIdx = activeTeam
     ? filteredTeams.findIndex(t => (t.team_id || t.Team_ID) === (activeTeam.team_id || activeTeam.Team_ID))
@@ -418,7 +420,7 @@ window.JudgeView = function({ user, onLogout }) {
       }
     }
     if (targetGroup) setSelectedGroup(targetGroup);
-    if (targetTeamId) setActiveTeamId(targetTeamId);
+    setActiveTeamId(targetTeamId || '');
     setDescExpanded(false);
   };
 
@@ -669,22 +671,27 @@ window.JudgeView = function({ user, onLogout }) {
               <select
                 value={activeTeam ? (activeTeam.team_id || activeTeam.Team_ID) : ''}
                 onChange={(e) => handleSafeSwitchTeam(e.target.value)}
-                className="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] bg-white border border-slate-300 text-slate-900 text-sm sm:text-base font-black rounded-lg py-1.5 pl-2.5 pr-8 focus:ring-2 focus:ring-teal-700 focus:outline-none truncate cursor-pointer shadow-2xs"
+                disabled={filteredTeams.length === 0}
+                className="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] bg-white border border-slate-300 text-slate-900 text-sm sm:text-base font-black rounded-lg py-1.5 pl-2.5 pr-8 focus:ring-2 focus:ring-teal-700 focus:outline-none truncate cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {filteredTeams.map((team, idx) => {
-                  const tid = team.team_id || team.Team_ID;
-                  const sc = scoresMap[tid];
-                  const statusSymbol = !sc ? '⚪ 未評' : sc.status === 'saved' ? '🟢 完稿' : '🟡 暫存';
-                  const totalStr = sc ? `${calculateTotal(sc)}分` : '--分';
-                  const sName = team.school || team.School || '';
-                  const tName = team.team_name || team.Team_Name || '';
-                  const title = team.work_title || team.Work_Title || '';
-                  return (
-                    <option key={tid} value={tid}>
-                      第{String(idx + 1).padStart(2, '0')}隊：{sName}{tName ? `【${tName}】` : ''} - {title} ({statusSymbol} {totalStr})
-                    </option>
-                  );
-                })}
+                {filteredTeams.length === 0 ? (
+                  <option value="">(本組目前尚無參賽隊伍)</option>
+                ) : (
+                  filteredTeams.map((team, idx) => {
+                    const tid = team.team_id || team.Team_ID;
+                    const sc = scoresMap[tid];
+                    const statusSymbol = !sc ? '⚪ 未評' : sc.status === 'saved' ? '🟢 完稿' : '🟡 暫存';
+                    const totalStr = sc ? `${calculateTotal(sc)}分` : '--分';
+                    const sName = team.school || team.School || '';
+                    const tName = team.team_name || team.Team_Name || '';
+                    const title = team.work_title || team.Work_Title || '';
+                    return (
+                      <option key={tid} value={tid}>
+                        第{String(idx + 1).padStart(2, '0')}隊：{sName}{tName ? `【${tName}】` : ''} - {title} ({statusSymbol} {totalStr})
+                      </option>
+                    );
+                  })
+                )}
               </select>
             </div>
 
@@ -1243,8 +1250,14 @@ window.JudgeView = function({ user, onLogout }) {
               </div>
             </div>
           ) : (
-            <div className="flex-1 bg-white rounded-xl border flex items-center justify-center text-gray-500 text-lg font-bold">
-              請從上方選單切換隊伍開始評分
+            <div className="flex-1 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-xs min-h-[420px]">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                <span className="material-icons text-4xl">folder_off</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-700">【{selectedGroup}】目前尚無參賽隊伍</h3>
+                <p className="text-sm text-slate-500 mt-1">此組別目前尚無隊伍報名，或尚未有隊伍上傳作品繳件資料。</p>
+              </div>
             </div>
           )}
         </div>
