@@ -322,34 +322,35 @@ function processCopyYearData(ss, payload) {
 }
 
 /**
- * 系統完整性一鍵診斷 Service (純系統結構與前後端試算表欄位位置對齊檢測)
+ * 系統完整性一鍵診斷 Service (採「標題名稱動態對應」檢測，確保欄位皆存在且名稱相符，不拘泥於固定欄位編號)
  */
 function verifySheetHeaderAlignment(sheet, expectedHeaders) {
   if (!sheet) {
     return { aligned: false, missing: expectedHeaders, mismatched: [], totalExpected: expectedHeaders.length };
   }
-  const lastCol = Math.max(sheet.getLastColumn(), expectedHeaders.length);
-  const actualRow = sheet.getLastRow() > 0
+  const lastCol = sheet.getLastColumn();
+  const actualRow = (lastCol > 0 && sheet.getLastRow() > 0)
     ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(v => String(v || '').trim())
     : [];
 
   const missing = [];
-  const mismatched = [];
+  const actualMap = {};
+  actualRow.forEach((name, idx) => {
+    if (name) actualMap[name] = idx + 1;
+  });
 
-  expectedHeaders.forEach((expectedName, idx) => {
-    const actualName = actualRow[idx] || '';
-    if (!actualName) {
-      missing.push(`第${idx + 1}欄(${expectedName})`);
-    } else if (actualName !== expectedName) {
-      mismatched.push(`第${idx + 1}欄(預期:${expectedName} / 實際:${actualName})`);
+  expectedHeaders.forEach(expectedName => {
+    if (actualMap[expectedName] === undefined) {
+      missing.push(expectedName);
     }
   });
 
   return {
-    aligned: missing.length === 0 && mismatched.length === 0,
+    aligned: missing.length === 0,
     missing: missing,
-    mismatched: mismatched,
-    totalExpected: expectedHeaders.length
+    mismatched: [],
+    totalExpected: expectedHeaders.length,
+    totalActual: actualRow.length
   };
 }
 
@@ -373,7 +374,7 @@ function processCheckSystemHealth(ss, payload) {
       : `缺少工作表分頁: ${missingSheets.join(', ')}`
   });
 
-  // 2. Teams 隊伍資料表欄位對齊檢測 (A ~ AE 欄，共 31 欄)
+  // 2. Teams 隊伍資料表欄位對齊檢測 (採標題名稱動態對應，不拘欄位順序)
   const teamSheet = ss.getSheetByName('Teams');
   if (teamSheet && typeof ensureTeamsSheetColumns === 'function') {
     ensureTeamsSheetColumns(teamSheet);
@@ -396,11 +397,11 @@ function processCheckSystemHealth(ss, payload) {
 
   checks.push({
     id: 'teams_columns_alignment',
-    title: '2. 隊伍表前後端欄位對齊 (Teams A~AE 共 31 欄)',
+    title: `2. 隊伍表前後端欄位對齊 (Teams 共 ${expectedTeamsHeaders.length} 欄，採標題自動對應)`,
     status: teamsAlign.aligned ? 'pass' : 'fail',
     detail: teamsAlign.aligned
-      ? `A 欄 ～ AE 欄共 ${expectedTeamsHeaders.length} 個欄位標題位置與前端 100% 對齊（含 C欄組別、D欄隊名、學生班級、雙師電話、Z欄補件備註、AA欄寄信紀錄；目前載入 ${teamRowCount} 筆隊伍列）`
-      : `欄位未對齊 — 缺失: [${teamsAlign.missing.join(', ') || '無'}]；名稱不符: [${teamsAlign.mismatched.join(', ') || '無'}]`
+      ? `已成功辨識全部 ${expectedTeamsHeaders.length} 個標題欄位（採標題名稱動態對應，不拘欄位先後順序；目前載入 ${teamRowCount} 筆隊伍列）`
+      : `欄位未對齊 — 缺失欄位: [${teamsAlign.missing.join(', ') || '無'}]`
   });
 
   // 3. Year_Config 年度與郵件草稿表欄位對齊檢測 (A ~ M 欄，共 13 欄)

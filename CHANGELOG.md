@@ -4,6 +4,21 @@
 
 ---
 
+## [v77.6-115] - 2026-11-18
+
+### 🚀 後端試算表全面升級「表頭標題名稱動態對應 (Dynamic Header Mapping)」
+- **隊伍資料讀寫全面動態化 ([Service_Teams.js](file:///d:/下載（D）/[網頁]簡報達人評審/Service_Teams.js))**：
+  - 新增 `getSheetHeaderMap(sheet)` 工具，後端讀取試算表時自動分析第 1 列表頭標題名稱，建立動態對照表。
+  - 徹底告別過去硬寫 `row[23]`, `row[24]` 之固定索引，讀取時採用 `getCol(row, '欄位名稱')`，不拘泥於試算表直欄先後順序！
+  - 新增 `buildTeamRowData` 動態列組裝器：單筆儲存（`processSaveTeam`）或批次匯入（`processImportTeams`）時，嚴格依照試算表當前實際的表頭順序動態填值，絕不放錯欄位。
+  - 重構 `ensureTeamsSheetColumns`：若試算表缺少某些新欄位，一律安全追加在最末尾，絕不覆蓋或搬移管理者既有的欄位位置。
+- **系統維運檢測升級為「標題存在性動態檢測」([Service_Config.js](file:///d:/下載（D）/[網頁]簡報達人評審/Service_Config.js))**：
+  - 重構 `verifySheetHeaderAlignment`：以標題名稱存在性為判定基準，只要 31 個必要欄位名稱皆存在於表頭即通過檢測，不再因直欄先後排列差異而誤判異常。
+- **全站快取升級 ([index.html](file:///d:/下載（D）/[網頁]簡報達人評審/index.html))**：
+  - 快取版本號提升至 `?v=77.6`。
+
+---
+
 ## [v77.5-115] - 2026-11-18
 
 ### 🛡️ 系統維運與完整性診斷重構：專注純系統架構與前後端試算表欄位位置對齊檢測
