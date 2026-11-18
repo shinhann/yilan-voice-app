@@ -289,6 +289,12 @@ window.JudgeView = function({ user, onLogout }) {
 
   const activeTeam = teams.find(t => (t.team_id || t.Team_ID) === activeTeamId) || filteredTeams[0];
 
+  const currentTeamIdx = activeTeam
+    ? filteredTeams.findIndex(t => (t.team_id || t.Team_ID) === (activeTeam.team_id || activeTeam.Team_ID))
+    : -1;
+  const prevTeam = currentTeamIdx > 0 ? filteredTeams[currentTeamIdx - 1] : null;
+  const nextTeam = currentTeamIdx >= 0 && currentTeamIdx < filteredTeams.length - 1 ? filteredTeams[currentTeamIdx + 1] : null;
+
   const currentScore = (activeTeam && scoresMap[activeTeam.team_id || activeTeam.Team_ID]) || {
     score_content: 32,
     score_expression: 24,
@@ -505,15 +511,6 @@ window.JudgeView = function({ user, onLogout }) {
   const embedUrl = getEmbedVideoUrl(rawVideoUrl);
   const activeDesc = activeTeam ? String(activeTeam.description || activeTeam.Description || '').trim() : '';
   const isCourseGroup = String(selectedGroup || '').includes('校訂課程');
-
-  const currentTeamIdx = useMemo(() => {
-    if (!activeTeam) return -1;
-    const currentTid = activeTeam.team_id || activeTeam.Team_ID;
-    return filteredTeams.findIndex(t => (t.team_id || t.Team_ID) === currentTid);
-  }, [filteredTeams, activeTeam]);
-
-  const prevTeam = currentTeamIdx > 0 ? filteredTeams[currentTeamIdx - 1] : null;
-  const nextTeam = currentTeamIdx >= 0 && currentTeamIdx < filteredTeams.length - 1 ? filteredTeams[currentTeamIdx + 1] : null;
 
   return (
     <div className="min-h-screen flex flex-col text-base" style={{ backgroundColor: 'var(--bg-light)' }}>
