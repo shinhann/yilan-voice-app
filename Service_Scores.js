@@ -29,10 +29,14 @@ function processGetJudgeScores(ss, payload) {
     const st = Number(row[7] ?? 16);
     const t = Number(row[8] ?? 8);
     const total = Number(row[9] || (c + e + st + t));
+    const catStr = String(row[1] || '').trim();
+    const grpStr = String(row[2] || '').trim();
+    const resolvedTeamName = (grpStr && grpStr !== catStr) ? grpStr : '';
     return {
       competition_year: row[0],
-      category: row[1],
-      group_name: row[2],
+      category: catStr,
+      group_name: grpStr,
+      team_name: resolvedTeamName,
       team_id: String(row[3]),
       judge_code: String(row[4]),
       score_content: c,
@@ -112,11 +116,14 @@ function processSubmitScore(ss, payload) {
     const calculatedTotal = Number((c + e + st + t).toFixed(1));
 
     const now = new Date();
-    const catValue = category || group_name || '';
+    const catValue = String(category || '').trim();
+    const grpStr = String(group_name || payload.team_name || '').trim();
+    // Group_Name 專門儲存真實隊伍名稱；若傳入的值與 category 相同代表舊版未帶隊名，則優先使用 team_name
+    const teamNameValue = (grpStr && grpStr !== catValue) ? grpStr : String(payload.team_name || '').trim();
     const rowData = [
       Number(targetYear),
       catValue,
-      group_name || catValue,
+      teamNameValue,
       String(team_id),
       String(judge_code),
       c,
@@ -412,17 +419,23 @@ function processGetAdminResults(ss, payload) {
     const values = finalSheet.getRange(2, 1, finalSheet.getLastRow() - 1, 9).getValues();
     finalResults = values
       .filter(row => String(row[0]) === reqYear)
-      .map(row => ({
-        competition_year: row[0],
-        category: String(row[1] || ''),
-        group_name: String(row[2] || ''),
-        team_id: String(row[3] || ''),
-        average_score: row[4] !== '' && row[4] !== null ? Number(row[4]) : '',
-        rank: row[5] !== '' && row[5] !== null ? Number(row[5]) : '',
-        rank_award: String(row[6] || ''),
-        feature_award: String(row[7] || ''),
-        rec_judge_summary: String(row[8] || '')
-      }));
+      .map(row => {
+        const catStr = String(row[1] || '').trim();
+        const grpStr = String(row[2] || '').trim();
+        const resolvedTeamName = (grpStr && grpStr !== catStr) ? grpStr : '';
+        return {
+          competition_year: row[0],
+          category: catStr,
+          group_name: grpStr,
+          team_name: resolvedTeamName,
+          team_id: String(row[3] || ''),
+          average_score: row[4] !== '' && row[4] !== null ? Number(row[4]) : '',
+          rank: row[5] !== '' && row[5] !== null ? Number(row[5]) : '',
+          rank_award: String(row[6] || ''),
+          feature_award: String(row[7] || ''),
+          rec_judge_summary: String(row[8] || '')
+        };
+      });
   }
 
   return {
@@ -474,8 +487,10 @@ function processSaveFinalResults(ss, payload) {
       const teamId = String(item.team_id || '').trim();
       if (!teamId) return;
 
-      const catVal = String(item.category || item.group_name || '');
-      const grpVal = String(item.group_name || item.category || '');
+      const catVal = String(item.category || payload.category || '').trim();
+      const grpStr = String(item.group_name || item.team_name || '').trim();
+      // Group_Name 專門存真實隊伍名稱；若傳入的值與 catVal 相同則視為組別未帶隊名，優先使用 item.team_name
+      const teamNameVal = (grpStr && grpStr !== catVal) ? grpStr : String(item.team_name || '').trim();
       const avgVal = item.average_score !== undefined && item.average_score !== '' ? Number(item.average_score) : '';
       const rankVal = item.rank !== undefined && item.rank !== '' ? Number(item.rank) : '';
       const rankAward = String(item.rank_award || '');       // 特優 / 優等 / ''
@@ -485,7 +500,7 @@ function processSaveFinalResults(ss, payload) {
       const rowData = [
         Number(targetYear),
         catVal,
-        grpVal,
+        teamNameVal,
         teamId,
         avgVal,
         rankVal,
@@ -502,7 +517,7 @@ function processSaveFinalResults(ss, payload) {
         finalSheet.getRange(foundIdx + 2, 1, 1, 9).setValues([rowData]);
       } else {
         finalSheet.appendRow(rowData);
-        existingRows.push([Number(targetYear), catVal, grpVal, teamId]);
+        existingRows.push([Number(targetYear), catVal, teamNameVal, teamId]);
       }
     });
 

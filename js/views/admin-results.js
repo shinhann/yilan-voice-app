@@ -494,10 +494,12 @@ window.AdminResultsView = function() {
     setSaving(true);
     const payloadResults = processedGroupData.map((item, idx) => {
       const dec = decisionsMap[item.team_id] || { feature_award: '', rank_award: '' };
+      const realTeamName = item.team_name || (item.group_name !== selectedCategory ? (item.group_name || '') : '') || '';
       return {
         team_id: item.team_id,
         category: selectedCategory,
-        group_name: selectedCategory,
+        group_name: realTeamName,
+        team_name: realTeamName,
         average_score: item.avg_score !== null ? item.avg_score : '',
         rank: item.final_rank !== null ? item.final_rank : (idx + 1),
         rank_award: dec.rank_award || '',

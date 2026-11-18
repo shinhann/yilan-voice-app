@@ -343,13 +343,15 @@ window.JudgeView = function({ user, onLogout }) {
 
     setSaving(true);
     const total = calculateTotal(currentScore);
-    const cat = activeTeam.category || activeTeam.Category || activeTeam.group_name || activeTeam.Group_Name || '';
+    const cat = activeTeam.category || activeTeam.Category || '';
+    const realTeamName = activeTeam.team_name || activeTeam.Team_Name || (activeTeam.group_name !== cat ? (activeTeam.group_name || activeTeam.Group_Name || '') : '') || '';
 
     const payload = {
       judge_code: judgeCode,
       competition_year: window.APP_CONFIG.CURRENT_YEAR,
       category: cat,
-      group_name: cat,
+      group_name: realTeamName,
+      team_name: realTeamName,
       team_id: tid,
       score_content: currentScore.score_content,
       score_expression: currentScore.score_expression,

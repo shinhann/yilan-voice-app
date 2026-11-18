@@ -4,6 +4,22 @@
 
 ---
 
+## [v77.7-115] - 2026-11-18
+
+### 🎯 資料庫核心表 Group_Name 與 Category 語意統一：消滅重複，全面落實「真實隊名儲存」
+- **評審評分介面 ([judge.js](file:///d:/下載（D）/[網頁]簡報達人評審/js/views/judge.js))**：
+  - `handleSubmitScore`：改為送出真實隊伍名稱 `team_name` 至後端，不再重複傳送 `category`。
+- **後端評分服務 ([Service_Scores.js](file:///d:/下載（D）/[網頁]簡報達人評審/Service_Scores.js))**：
+  - `processSubmitScore`：`Scores` 表 B 欄 (`Category`) 專門存競賽組別（如：宜蘭在地國中組），C 欄 (`Group_Name`) 專門存真實隊伍名稱（如：中華、四四就試隊）。
+  - `processGetJudgeScores`：讀取評分時解析出 `team_name` 與 `group_name`，並具備智慧防呆相容舊資料。
+  - `processGetAdminResults` / `processSaveFinalResults`：`Final_Results` 表 C 欄儲存各隊真實隊名，決審會議存檔與讀取全面對齊。
+- **管理端決審得獎總表介面 ([admin-results.js](file:///d:/下載（D）/[網頁]簡報達人評審/js/views/admin-results.js))**：
+  - 儲存決審結果至 `Final_Results` 時，精準寫入各隊真實隊名，管理者查表一目了然。
+- **全站快取升級 ([index.html](file:///d:/下載（D）/[網頁]簡報達人評審/index.html))**：
+  - 快取版本號提升至 `?v=77.7`。
+
+---
+
 ## [v77.6-115] - 2026-11-18
 
 ### 🚀 後端試算表全面升級「表頭標題名稱動態對應 (Dynamic Header Mapping)」
