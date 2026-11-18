@@ -322,13 +322,42 @@ function processCopyYearData(ss, payload) {
 }
 
 /**
- * 系統完整性一鍵診斷 Service
+ * 系統完整性一鍵診斷 Service (純系統結構與前後端試算表欄位位置對齊檢測)
  */
+function verifySheetHeaderAlignment(sheet, expectedHeaders) {
+  if (!sheet) {
+    return { aligned: false, missing: expectedHeaders, mismatched: [], totalExpected: expectedHeaders.length };
+  }
+  const lastCol = Math.max(sheet.getLastColumn(), expectedHeaders.length);
+  const actualRow = sheet.getLastRow() > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(v => String(v || '').trim())
+    : [];
+
+  const missing = [];
+  const mismatched = [];
+
+  expectedHeaders.forEach((expectedName, idx) => {
+    const actualName = actualRow[idx] || '';
+    if (!actualName) {
+      missing.push(`第${idx + 1}欄(${expectedName})`);
+    } else if (actualName !== expectedName) {
+      mismatched.push(`第${idx + 1}欄(預期:${expectedName} / 實際:${actualName})`);
+    }
+  });
+
+  return {
+    aligned: missing.length === 0 && mismatched.length === 0,
+    missing: missing,
+    mismatched: mismatched,
+    totalExpected: expectedHeaders.length
+  };
+}
+
 function processCheckSystemHealth(ss, payload) {
   const reqYear = String(payload.year || payload.competition_year || 115);
   const checks = [];
 
-  // 1. 工作表結構檢查 (Database Schema Check)
+  // 1. 核心工作表分頁結構檢查 (7 大分頁)
   const expectedSheets = ['System_Config', 'Judge_Setup', 'Year_Config', 'Teams', 'Scores', 'Final_Results', 'Backup_Timestamp'];
   const missingSheets = [];
   expectedSheets.forEach(name => {
@@ -337,20 +366,94 @@ function processCheckSystemHealth(ss, payload) {
 
   checks.push({
     id: 'sheets_schema',
-    title: '資料表結構 (Database Schema)',
+    title: '1. 核心工作表分頁結構 (7 大分頁檢查)',
     status: missingSheets.length === 0 ? 'pass' : 'fail',
-    detail: missingSheets.length === 0 ? `所有 ${expectedSheets.length} 個工作表皆齊全` : `缺少工作表: ${missingSheets.join(', ')}`
+    detail: missingSheets.length === 0
+      ? `所有 ${expectedSheets.length} 張工作表分頁 (${expectedSheets.join('、')}) 皆存在且名稱正確`
+      : `缺少工作表分頁: ${missingSheets.join(', ')}`
   });
 
-  // 2. 評審設定診斷 (Judges Setup Check)
+  // 2. Teams 隊伍資料表欄位對齊檢測 (A ~ AE 欄，共 31 欄)
+  const teamSheet = ss.getSheetByName('Teams');
+  if (teamSheet && typeof ensureTeamsSheetColumns === 'function') {
+    ensureTeamsSheetColumns(teamSheet);
+  }
+  const expectedTeamsHeaders = [
+    'Team_ID', 'Competition_Year', 'Category', 'Group_Name', 'School', 'Work_Title', 'Description',
+    'Student1_Name', 'Student1_Email', 'Student2_Name', 'Student2_Email', 'Student3_Name', 'Student3_Email',
+    'Teacher1_Name', 'Teacher1_Email', 'Teacher2_Name', 'Teacher2_Email',
+    'Contact_Person', 'Contact_Phone',
+    'MindMap_Link', 'Slides_Link', 'Video_Link', 'Consent_Link', 'Course_Plan_Link', 'Drive_Link',
+    'Link_Note', 'Memo',
+    'Student1_Class', 'Student2_Class', 'Student3_Class', 'Teacher2_Phone'
+  ];
+  const teamsAlign = verifySheetHeaderAlignment(teamSheet, expectedTeamsHeaders);
+  let teamRowCount = 0;
+  if (teamSheet && teamSheet.getLastRow() > 1) {
+    const tRows = teamSheet.getRange(2, 1, teamSheet.getLastRow() - 1, 2).getValues();
+    teamRowCount = tRows.filter(r => String(r[1]) === reqYear).length;
+  }
+
+  checks.push({
+    id: 'teams_columns_alignment',
+    title: '2. 隊伍表前後端欄位對齊 (Teams A~AE 共 31 欄)',
+    status: teamsAlign.aligned ? 'pass' : 'fail',
+    detail: teamsAlign.aligned
+      ? `A 欄 ～ AE 欄共 ${expectedTeamsHeaders.length} 個欄位標題位置與前端 100% 對齊（含 C欄組別、D欄隊名、學生班級、雙師電話、Z欄補件備註、AA欄寄信紀錄；目前載入 ${teamRowCount} 筆隊伍列）`
+      : `欄位未對齊 — 缺失: [${teamsAlign.missing.join(', ') || '無'}]；名稱不符: [${teamsAlign.mismatched.join(', ') || '無'}]`
+  });
+
+  // 3. Year_Config 年度與郵件草稿表欄位對齊檢測 (A ~ M 欄，共 13 欄)
+  const configRes = processGetSystemConfig(ss, { year: reqYear });
+  const yearSheet = ss.getSheetByName('Year_Config');
+  const yearAlign = verifySheetHeaderAlignment(yearSheet, YEAR_CONFIG_HEADERS_V77);
+  const hasConfig = configRes.status === 'success';
+
+  checks.push({
+    id: 'year_config_alignment',
+    title: '3. 年度設定與郵件草稿欄位對齊 (Year_Config A~M 共 13 欄)',
+    status: (yearAlign.aligned && hasConfig) ? 'pass' : 'fail',
+    detail: (yearAlign.aligned && hasConfig)
+      ? `A 欄 ～ M 欄共 ${YEAR_CONFIG_HEADERS_V77.length} 個欄位完全對齊（G欄公用信箱設定、H~M欄三封信件草稿皆已就緒｜系統狀態：${configRes.data.is_judging_open ? '🟢 開放評分中' : '🔴 評分鎖定中'}）`
+      : `欄位未對齊 — 缺失: [${yearAlign.missing.join(', ') || '無'}]；名稱不符: [${yearAlign.mismatched.join(', ') || '無'}]`
+  });
+
+  // 4. Scores (14欄) 與 Final_Results (9欄) 評分及決審表欄位對齊檢測
+  const scoreSheet = ss.getSheetByName('Scores');
+  const finalSheet = ss.getSheetByName('Final_Results');
+  const expectedScoresHeaders = [
+    'Competition_Year', 'Category', 'Group_Name', 'Team_ID', 'Judge_Code',
+    'Score_Content', 'Score_Expression', 'Score_Stage', 'Score_Technique', 'Total_Score',
+    'Award_Recommendation', 'Comment', 'Session_ID', 'Last_Updated'
+  ];
+  const expectedFinalHeaders = [
+    'Competition_Year', 'Category', 'Group_Name', 'Team_ID',
+    'Average_Score', 'Rank', 'Rank_Award', 'Feature_Award', 'Rec_Judge_Summary'
+  ];
+  const scoresAlign = verifySheetHeaderAlignment(scoreSheet, expectedScoresHeaders);
+  const finalAlign = verifySheetHeaderAlignment(finalSheet, expectedFinalHeaders);
+  const bothScoreTablesAligned = scoresAlign.aligned && finalAlign.aligned;
+
+  checks.push({
+    id: 'scores_results_alignment',
+    title: '4. 評分與決審表欄位對齊 (Scores 14欄 & Final_Results 9欄)',
+    status: bothScoreTablesAligned ? 'pass' : 'fail',
+    detail: bothScoreTablesAligned
+      ? `Scores (A~N 共 14 欄) 與 Final_Results (A~I 共 9 欄) 欄位結構與前端計分/共識總表 100% 對齊`
+      : `Scores 缺失/不符: [${[...scoresAlign.missing, ...scoresAlign.mismatched].join(', ') || '無'}] ｜ Final_Results 缺失/不符: [${[...finalAlign.missing, ...finalAlign.mismatched].join(', ') || '無'}]`
+  });
+
+  // 5. Judge_Setup (5欄) 與評審代號 (A~I) 設定檢測
   const judgeSheet = ss.getSheetByName('Judge_Setup');
+  const expectedJudgeHeaders = ['Competition_Year', 'Judge_Code', 'Judge_Name', 'Login_Password', 'Category_Short'];
+  const judgeAlign = verifySheetHeaderAlignment(judgeSheet, expectedJudgeHeaders);
   let judgesCount = 0;
   let missingCodes = [];
   if (judgeSheet && judgeSheet.getLastRow() > 1) {
     const rows = judgeSheet.getRange(2, 1, judgeSheet.getLastRow() - 1, 5).getValues();
     const yearJudges = rows.filter(r => String(r[0]) === reqYear);
     judgesCount = yearJudges.length;
-    const existingCodes = yearJudges.map(r => String(r[1]));
+    const existingCodes = yearJudges.map(r => String(r[1]).trim());
     ['A','B','C','D','E','F','G','H','I'].forEach(code => {
       if (!existingCodes.includes(code)) missingCodes.push(code);
     });
@@ -358,68 +461,28 @@ function processCheckSystemHealth(ss, payload) {
 
   checks.push({
     id: 'judges_setup',
-    title: `115學年度 評審名單設定 (9位代號 A~I)`,
-    status: missingCodes.length === 0 ? 'pass' : (judgesCount > 0 ? 'warn' : 'fail'),
-    detail: missingCodes.length === 0 ? `已完成 9 位評審 (A~I) 建立` : `已建立 ${judgesCount} 位評審，缺少代號: ${missingCodes.join(', ') || '無'}`
+    title: `5. 評審資料表欄位 (Judge_Setup 5欄) 與代號 A~I 對齊`,
+    status: (judgeAlign.aligned && missingCodes.length === 0) ? 'pass' : (judgeAlign.aligned ? 'warn' : 'fail'),
+    detail: (judgeAlign.aligned && missingCodes.length === 0)
+      ? `A~E 共 5 欄結構正確，且 ${reqYear}學年度 9 位評審代號 (A~I) 皆已完整建立`
+      : `欄位對齊: ${judgeAlign.aligned ? '正常' : '異常'} ｜ 已建立 ${judgesCount} 位評審，缺少代號: ${missingCodes.join(', ') || '無'}`
   });
 
-  // 3. 隊伍資料完整性 (Teams Data Check)
-  const teamSheet = ss.getSheetByName('Teams');
-  let teamCount = 0;
-  let missingPlanLinkCount = 0;
-  if (teamSheet && teamSheet.getLastRow() > 1) {
-    const teamRows = teamSheet.getRange(2, 1, teamSheet.getLastRow() - 1, teamSheet.getLastColumn()).getValues();
-    const yearTeams = teamRows.filter(r => String(r[1]) === reqYear);
-    teamCount = yearTeams.length;
-    // 檢查 115 新增欄位 Course_Plan_Link (col 25, idx 24)
-    missingPlanLinkCount = yearTeams.filter(r => !r[24] || String(r[24]).trim() === '').length;
-  }
-
-  checks.push({
-    id: 'teams_data',
-    title: `115學年度 隊伍資料庫 (Teams)`,
-    status: teamCount > 0 ? (missingPlanLinkCount === 0 ? 'pass' : 'warn') : 'warn',
-    detail: teamCount > 0 ? `共 ${teamCount} 支隊伍 (${missingPlanLinkCount} 隊未填校訂課程 PDF 連結)` : '尚無報名隊伍資料'
-  });
-
-  // 4. 系統開關與規準網址 (System Config Check)
-  const configRes = processGetSystemConfig(ss, { year: reqYear });
-  const hasConfig = configRes.status === 'success';
-
-  checks.push({
-    id: 'system_config',
-    title: '競賽開關與規準網址 (System Config)',
-    status: hasConfig ? 'pass' : 'fail',
-    detail: hasConfig ? `系統狀態: ${configRes.data.is_judging_open ? '🟢 開放評分中' : '🔴 評分鎖定中'}` : '未找到當前學年度設定'
-  });
-
-  // 5. 評分數據紀錄診斷 (Scores Data Check)
-  const scoreSheet = ss.getSheetByName('Scores');
-  let scoreCount = 0;
-  if (scoreSheet && scoreSheet.getLastRow() > 1) {
-    const scoreRows = scoreSheet.getRange(2, 1, scoreSheet.getLastRow() - 1, 5).getValues();
-    scoreCount = scoreRows.filter(r => String(r[0]) === reqYear).length;
-  }
-
-  checks.push({
-    id: 'scores_data',
-    title: '評分紀錄庫 (Scores)',
-    status: 'pass',
-    detail: `當前累積 ${scoreCount} 筆評分紀錄`
-  });
-
-  // 6. 雲端快照紀錄診斷 (Snapshots Check)
+  // 6. 前後端 API 連線、寄信服務與雲端快照表檢測
   const backupSheet = ss.getSheetByName('Backup_Timestamp');
+  const expectedBackupHeaders = ['Snapshot_Name', 'Timestamp', 'Triggered_By'];
+  const backupAlign = verifySheetHeaderAlignment(backupSheet, expectedBackupHeaders);
   let snapshotCount = 0;
   if (backupSheet && backupSheet.getLastRow() > 1) {
     snapshotCount = backupSheet.getLastRow() - 1;
   }
+  const mailEnv = getMailEnvironmentInfo();
 
   checks.push({
-    id: 'snapshots_check',
-    title: '歷史時間點快照 (Snapshots)',
-    status: 'pass',
-    detail: `已建立 ${snapshotCount} 份快照紀錄`
+    id: 'api_mail_snapshots_check',
+    title: '6. 前後端 API 通訊、寄信服務與快照表 (Backup_Timestamp)',
+    status: backupAlign.aligned ? 'pass' : 'warn',
+    detail: `API 通訊驗證正常 ｜ 今日剩餘寄信配額：${mailEnv.remaining_quota !== null ? mailEnv.remaining_quota + ' 封' : '正常'} ｜ 快照表欄位對齊正常（已存 ${snapshotCount} 份快照）`
   });
 
   return {

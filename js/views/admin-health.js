@@ -86,9 +86,9 @@ window.AdminHealthView = function() {
         <div>
           <h2 className="text-lg font-bold text-gray-800 flex items-center">
             <span className="material-icons text-amber-900 mr-2">health_and_safety</span>
-            115學年度 系統維運與完整性診斷
+            115學年度 系統維運與前後端欄位對齊診斷
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">即時檢測前後端通訊、資料庫結構、9位評審設定與資料備份狀態</p>
+          <p className="text-xs text-gray-500 mt-0.5">純系統結構檢測：逐欄核對 7 大工作表分頁、欄位座標位置（Teams 31欄、Year_Config 13欄、Scores 14欄等）與前後端 API 對齊狀態</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
