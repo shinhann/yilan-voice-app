@@ -510,6 +510,7 @@ window.JudgeView = function({ user, onLogout }) {
   const rawVideoUrl = activeTeam ? (activeTeam.Video_Link || activeTeam.video_link || '') : '';
   const embedUrl = getEmbedVideoUrl(rawVideoUrl);
   const activeDesc = activeTeam ? String(activeTeam.description || activeTeam.Description || '').trim() : '';
+  const activeLinkNote = activeTeam ? String(activeTeam.Link_Note || activeTeam.link_note || '').trim() : '';
   const isCourseGroup = String(selectedGroup || '').includes('校訂課程');
 
   return (
@@ -951,6 +952,19 @@ window.JudgeView = function({ user, onLogout }) {
                         </a>
                       )}
                     </div>
+
+                    {/* 大會形式審查補件／異常備註 (有內容時才顯示) */}
+                    {activeLinkNote && (
+                      <div className="bg-amber-50/90 border-2 border-amber-400/80 rounded-xl p-3 text-amber-950 text-sm sm:text-base space-y-1 shadow-2xs">
+                        <div className="flex items-center font-black text-amber-900">
+                          <span className="material-icons text-amber-600 text-lg mr-1.5">warning</span>
+                          大會形式審查備註（請評審委員參照規準評分）：
+                        </div>
+                        <div className="pl-6 text-amber-950 whitespace-pre-wrap font-bold leading-relaxed">
+                          {activeLinkNote}
+                        </div>
+                      </div>
+                    )}
 
                     {/* 作品說明 (手風琴展開/收合) */}
                     {activeDesc ? (
