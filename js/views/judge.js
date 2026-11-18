@@ -33,6 +33,7 @@ window.JudgeView = function({ user, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [descExpanded, setDescExpanded] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // 字體大小狀態：'sm' (小) | 'md' (中 - 預設) | 'lg' (大)
   const [fontScale, setFontScale] = useState(() => {
@@ -505,6 +506,15 @@ window.JudgeView = function({ user, onLogout }) {
   const activeDesc = activeTeam ? String(activeTeam.description || activeTeam.Description || '').trim() : '';
   const isCourseGroup = String(selectedGroup || '').includes('校訂課程');
 
+  const currentTeamIdx = useMemo(() => {
+    if (!activeTeam) return -1;
+    const currentTid = activeTeam.team_id || activeTeam.Team_ID;
+    return filteredTeams.findIndex(t => (t.team_id || t.Team_ID) === currentTid);
+  }, [filteredTeams, activeTeam]);
+
+  const prevTeam = currentTeamIdx > 0 ? filteredTeams[currentTeamIdx - 1] : null;
+  const nextTeam = currentTeamIdx >= 0 && currentTeamIdx < filteredTeams.length - 1 ? filteredTeams[currentTeamIdx + 1] : null;
+
   return (
     <div className="min-h-screen flex flex-col text-base" style={{ backgroundColor: 'var(--bg-light)' }}>
       {/* Toast 浮動提示 */}
@@ -592,16 +602,18 @@ window.JudgeView = function({ user, onLogout }) {
           </div>
         </header>
 
-        {/* 2. 組別切換與進度條 */}
-        <div className="bg-white border-b px-6 py-3 flex flex-wrap justify-between items-center gap-4 shadow-2xs">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-base font-bold text-gray-800 flex items-center">
-              <span className="material-icons text-lg mr-1 text-amber-900">folder_special</span>
-              您的負責組別：
+        {/* 2. 組別切換、隊伍快速跳轉 (上一隊/下一隊/下拉) 與進度條 */}
+        <div className="bg-white border-b px-4 lg:px-6 py-2.5 flex flex-wrap justify-between items-center gap-3 shadow-2xs">
+          {/* 左區：組別切換 + 隊伍總覽展開/收合開關 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm sm:text-base font-bold text-gray-800 flex items-center">
+              <span className="material-icons text-base sm:text-lg mr-1 text-amber-900">folder_special</span>
+              組別：
             </span>
             {allowedGroupList.map(g => (
               <button
                 key={g}
+                type="button"
                 onClick={() => {
                   const firstInGroup = teams.find(t => {
                     const cat = String(t.category || t.Category || t.group_name || t.Group_Name || '').trim();
@@ -609,33 +621,102 @@ window.JudgeView = function({ user, onLogout }) {
                   });
                   handleSafeSwitchTeam(firstInGroup ? (firstInGroup.team_id || firstInGroup.Team_ID) : '', g);
                 }}
-                className={`px-4 py-2 rounded-xl text-base font-bold transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-sm sm:text-base font-bold transition cursor-pointer ${
                   selectedGroup === g
-                    ? 'bg-amber-900 text-white shadow-sm'
+                    ? 'bg-amber-900 text-white shadow-xs'
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
               >
                 {g}
               </button>
             ))}
+
+            {/* 展開/收合左側隊伍清單按鈕 */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={`ml-1 px-3 py-1.5 rounded-lg text-sm sm:text-base font-bold flex items-center transition cursor-pointer border ${
+                isSidebarOpen
+                  ? 'bg-amber-100 text-amber-950 border-amber-300'
+                  : 'bg-stone-50 text-stone-700 hover:bg-stone-100 border-stone-300'
+              }`}
+              title={isSidebarOpen ? "收合左側隊伍清單" : "展開左側隊伍清單"}
+            >
+              <span className="material-icons text-base sm:text-lg mr-1">
+                {isSidebarOpen ? 'view_sidebar' : 'menu'}
+              </span>
+              {isSidebarOpen ? '收合清單' : '隊伍清單'}
+            </button>
           </div>
 
-          {/* 進度統計與下一步簡短提醒 */}
-          <div className="flex flex-wrap items-center gap-4 text-sm sm:text-base">
-            <div className="flex items-center space-x-3">
-              <span className="text-gray-800 font-bold">
-                本組完稿進度：<strong className="text-emerald-700 text-lg font-black">{savedCount}</strong> / {filteredTeams.length} 隊
-              </span>
-              <div className="w-32 h-3.5 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-600 transition-all duration-300"
-                  style={{ width: `${filteredTeams.length > 0 ? (savedCount / filteredTeams.length) * 100 : 0}%` }}
-                />
-              </div>
+          {/* 中區：上一隊 / 下拉選單 / 下一隊 */}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-stone-100/90 p-1 rounded-xl border border-stone-300">
+            <button
+              type="button"
+              disabled={!prevTeam}
+              onClick={() => prevTeam && handleSafeSwitchTeam(prevTeam.team_id || prevTeam.Team_ID)}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-sm sm:text-base font-black flex items-center transition ${
+                prevTeam
+                  ? 'bg-white hover:bg-amber-50 text-amber-950 shadow-2xs cursor-pointer border border-stone-200'
+                  : 'text-gray-400 cursor-not-allowed opacity-60'
+              }`}
+              title={prevTeam ? `切換至上一隊：${prevTeam.work_title || prevTeam.Work_Title}` : '已是本組第一隊'}
+            >
+              <span className="material-icons text-base sm:text-lg mr-0.5">chevron_left</span>
+              上一隊
+            </button>
+
+            {/* 隊伍下拉跳轉選單 */}
+            <div className="relative">
+              <select
+                value={activeTeam ? (activeTeam.team_id || activeTeam.Team_ID) : ''}
+                onChange={(e) => handleSafeSwitchTeam(e.target.value)}
+                className="max-w-[200px] sm:max-w-[320px] md:max-w-[420px] bg-white border border-stone-300 text-stone-900 text-sm sm:text-base font-black rounded-lg py-1.5 pl-2.5 pr-8 focus:ring-2 focus:ring-amber-900 focus:outline-none truncate cursor-pointer shadow-2xs"
+              >
+                {filteredTeams.map((team, idx) => {
+                  const tid = team.team_id || team.Team_ID;
+                  const sc = scoresMap[tid];
+                  const statusSymbol = !sc ? '⚪ 未評' : sc.status === 'saved' ? '🟢 完稿' : '🟡 暫存';
+                  const totalStr = sc ? `${calculateTotal(sc)}分` : '--分';
+                  const sName = team.school || team.School || '';
+                  const tName = team.team_name || team.Team_Name || '';
+                  const title = team.work_title || team.Work_Title || '';
+                  return (
+                    <option key={tid} value={tid}>
+                      第{String(idx + 1).padStart(2, '0')}隊：{sName}{tName ? `【${tName}】` : ''} - {title} ({statusSymbol} {totalStr})
+                    </option>
+                  );
+                })}
+              </select>
             </div>
-            <span className="text-sm text-amber-900 font-bold bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
-              💡 全部評完後，請點選右上角「本組評分總表 (簽名單)」列印並簽名
+
+            <button
+              type="button"
+              disabled={!nextTeam}
+              onClick={() => nextTeam && handleSafeSwitchTeam(nextTeam.team_id || nextTeam.Team_ID)}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-sm sm:text-base font-black flex items-center transition ${
+                nextTeam
+                  ? 'bg-white hover:bg-amber-50 text-amber-950 shadow-2xs cursor-pointer border border-stone-200'
+                  : 'text-gray-400 cursor-not-allowed opacity-60'
+              }`}
+              title={nextTeam ? `切換至下一隊：${nextTeam.work_title || nextTeam.Work_Title}` : '已是本組最後一隊'}
+            >
+              下一隊
+              <span className="material-icons text-base sm:text-lg ml-0.5">chevron_right</span>
+            </button>
+          </div>
+
+          {/* 右區：進度統計 */}
+          <div className="flex items-center space-x-2.5 text-sm sm:text-base">
+            <span className="text-gray-800 font-bold">
+              完稿進度：<strong className="text-emerald-700 text-base sm:text-lg font-black">{savedCount}</strong> / {filteredTeams.length} 隊
             </span>
+            <div className="w-24 sm:w-28 h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300"
+                style={{ width: `${filteredTeams.length > 0 ? (savedCount / filteredTeams.length) * 100 : 0}%` }}
+              />
+            </div>
           </div>
         </div>
 
@@ -664,444 +745,496 @@ window.JudgeView = function({ user, onLogout }) {
           </div>
         )}
 
-        {/* 3. 主工作台：左右雙欄 Split-Screen */}
+        {/* 3. 主工作台：自適應雙欄與分屏架構 */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 gap-5 max-w-[1760px] w-full mx-auto">
           
-          {/* 左側欄：隊伍清單與即時序位 */}
-          <div className={`${uiScale.sidebarWidth} bg-white rounded-xl border shadow-xs flex flex-col overflow-hidden shrink-0 transition-all duration-200`}>
-            <div className="p-4 bg-amber-50/70 border-b flex justify-between items-center">
-              <span className={`${uiScale.sidebarHeader} font-black text-amber-950`}>
-                {selectedGroup} ({filteredTeams.length} 隊)
-              </span>
-              <span className="text-sm text-gray-600 font-bold">點選隊伍切換</span>
-            </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-gray-200 max-h-[380px] lg:max-h-none">
-              {filteredTeams.length === 0 ? (
-                <div className="p-8 text-center text-base text-gray-500 font-bold">此組別目前尚無參賽隊伍</div>
-              ) : (
-                filteredTeams.map((team, idx) => {
-                  const tid = team.team_id || team.Team_ID;
-                  const sc = scoresMap[tid];
-                  const isSelected = activeTeam && (activeTeam.team_id || activeTeam.Team_ID) === tid;
-                  const rank = rankMap[tid];
-                  const teamTotal = sc ? calculateTotal(sc) : null;
-                  const schoolName = team.school || team.School || '';
-                  const teamName = team.team_name || team.Team_Name || '';
+          {/* 左側欄：隊伍清單與即時序位 (可展開/收合) */}
+          {isSidebarOpen && (
+            <div className={`${uiScale.sidebarWidth} bg-white rounded-xl border shadow-xs flex flex-col overflow-hidden shrink-0 transition-all duration-200`}>
+              <div className="p-3.5 bg-amber-50/70 border-b flex justify-between items-center">
+                <span className={`${uiScale.sidebarHeader} font-black text-amber-950`}>
+                  {selectedGroup} ({filteredTeams.length} 隊)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="text-xs text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2 py-1 rounded font-bold transition cursor-pointer"
+                  title="收合隊伍列表"
+                >
+                  ◀ 點此收合
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-gray-200 max-h-[380px] lg:max-h-none">
+                {filteredTeams.length === 0 ? (
+                  <div className="p-8 text-center text-base text-gray-500 font-bold">此組別目前尚無參賽隊伍</div>
+                ) : (
+                  filteredTeams.map((team, idx) => {
+                    const tid = team.team_id || team.Team_ID;
+                    const sc = scoresMap[tid];
+                    const isSelected = activeTeam && (activeTeam.team_id || activeTeam.Team_ID) === tid;
+                    const rank = rankMap[tid];
+                    const teamTotal = sc ? calculateTotal(sc) : null;
+                    const schoolName = team.school || team.School || '';
+                    const teamName = team.team_name || team.Team_Name || '';
 
-                  return (
-                    <div
-                      key={tid}
-                      onClick={() => handleSafeSwitchTeam(tid)}
-                      className={`p-4 cursor-pointer transition flex justify-between items-start gap-3 ${
-                        isSelected
-                          ? 'bg-amber-100/80 border-l-8 border-amber-900'
-                          : idx % 2 === 1
-                          ? 'bg-stone-50/70 hover:bg-amber-50/40'
-                          : 'bg-white hover:bg-amber-50/40'
-                      }`}
-                    >
-                      <div className="space-y-1.5 min-w-0 flex-1">
-                        {/* 第一行：隊伍序號 + 學校與隊伍名稱 */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className={`${uiScale.teamIdxBadge} font-mono font-black bg-amber-900 text-white rounded-md shrink-0`}>
-                            第 {String(idx + 1).padStart(2, '0')} 隊
-                          </span>
-                          <span className={`${uiScale.teamSchool} text-gray-700 font-bold break-words`}>
-                            {schoolName}{teamName ? `【${teamName}】` : ''}
-                          </span>
-                        </div>
-
-                        {/* 第二行：作品標題 */}
-                        <p className={`font-black ${uiScale.teamTitle} text-gray-950 line-clamp-2 pt-0.5`}>
-                          {team.work_title || team.Work_Title}
-                        </p>
-
-                        {sc && sc.award && (
-                          <span className="inline-block text-sm px-2.5 py-0.5 bg-amber-200 text-amber-950 rounded-md font-black">
-                            ✨ 推薦：{sc.award}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 右側：分數、即時序位與狀態燈號 */}
-                      <div className="text-right shrink-0 space-y-1.5 pl-1">
-                        {teamTotal !== null ? (
-                          <div>
-                            <span className={`${uiScale.teamScore} font-black text-amber-900`}>{teamTotal}</span>
-                            <span className="text-sm text-gray-600 font-bold ml-0.5">分</span>
-                            {rank && (
-                              <div className={`${uiScale.teamRank} font-black text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 mt-0.5`}>
-                                序位第 {rank}
-                              </div>
-                            )}
+                    return (
+                      <div
+                        key={tid}
+                        onClick={() => handleSafeSwitchTeam(tid)}
+                        className={`p-4 cursor-pointer transition flex justify-between items-start gap-3 ${
+                          isSelected
+                            ? 'bg-amber-100/80 border-l-8 border-amber-900'
+                            : idx % 2 === 1
+                            ? 'bg-stone-50/70 hover:bg-amber-50/40'
+                            : 'bg-white hover:bg-amber-50/40'
+                        }`}
+                      >
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          {/* 第一行：隊伍序號 + 學校與隊伍名稱 */}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`${uiScale.teamIdxBadge} font-mono font-black bg-amber-900 text-white rounded-md shrink-0`}>
+                              第 {String(idx + 1).padStart(2, '0')} 隊
+                            </span>
+                            <span className={`${uiScale.teamSchool} text-gray-700 font-bold break-words`}>
+                              {schoolName}{teamName ? `【${teamName}】` : ''}
+                            </span>
                           </div>
-                        ) : (
-                          <div className="text-base text-gray-400 font-mono font-bold">-- 分</div>
-                        )}
 
-                        <div>
-                          {!sc ? (
-                            <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-gray-100 text-gray-600 border border-gray-300`}>
-                              ⚪ 未評
-                            </span>
-                          ) : sc.status === 'saved' ? (
-                            <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300`}>
-                              🟢 完稿
-                            </span>
-                          ) : (
-                            <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300`}>
-                              🟡 暫存
+                          {/* 第二行：作品標題 */}
+                          <p className={`font-black ${uiScale.teamTitle} text-gray-950 line-clamp-2 pt-0.5`}>
+                            {team.work_title || team.Work_Title}
+                          </p>
+
+                          {sc && sc.award && (
+                            <span className="inline-block text-sm px-2.5 py-0.5 bg-amber-200 text-amber-950 rounded-md font-black">
+                              ✨ 推薦：{sc.award}
                             </span>
                           )}
                         </div>
+
+                        {/* 右側：分數、即時序位與狀態燈號 */}
+                        <div className="text-right shrink-0 space-y-1.5 pl-1">
+                          {teamTotal !== null ? (
+                            <div>
+                              <span className={`${uiScale.teamScore} font-black text-amber-900`}>{teamTotal}</span>
+                              <span className="text-sm text-gray-600 font-bold ml-0.5">分</span>
+                              {rank && (
+                                <div className={`${uiScale.teamRank} font-black text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 mt-0.5`}>
+                                  序位第 {rank}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-base text-gray-400 font-mono font-bold">-- 分</div>
+                          )}
+
+                          <div>
+                            {!sc ? (
+                              <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-gray-100 text-gray-600 border border-gray-300`}>
+                                ⚪ 未評
+                              </span>
+                            ) : sc.status === 'saved' ? (
+                              <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300`}>
+                                🟢 完稿
+                              </span>
+                            ) : (
+                              <span className={`inline-block ${uiScale.teamStatus} font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300`}>
+                                🟡 暫存
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 主畫面：左右分屏（左閱卷、右評分） */}
+          {activeTeam ? (
+            <div className="flex-1 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+                
+                {/* 左半部 (xl:col-span-6)：作品資料、檔案膠囊按鈕、作品說明、影片播放器 */}
+                <div className="xl:col-span-6 space-y-4">
+                  {/* 作品標題與檔案膠囊區 */}
+                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-950 rounded-lg text-sm font-bold">
+                          {activeTeam.category || activeTeam.Category || activeTeam.group_name || activeTeam.Group_Name}
+                        </span>
+                        <span className="text-base sm:text-lg font-bold text-gray-800">
+                          🏫 {activeTeam.school || activeTeam.School}
+                          {(activeTeam.team_name || activeTeam.Team_Name) ? ` 【${activeTeam.team_name || activeTeam.Team_Name}】` : ''}
+                        </span>
+                      </div>
+                      
+                      {/* 當前隊伍存檔狀態標示 */}
+                      <div className="text-right shrink-0">
+                        {currentScore.status === 'saved' ? (
+                          <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-lg text-xs sm:text-sm text-emerald-900 font-bold flex items-center">
+                            <span className="material-icons text-base mr-1">cloud_done</span>
+                            已存雲端
+                          </span>
+                        ) : (currentScore.status === 'draft' || currentScore.status === 'modified') ? (
+                          <span className="px-2.5 py-1 bg-amber-50 border border-amber-300 rounded-lg text-xs sm:text-sm text-amber-900 font-bold flex items-center">
+                            <span className="material-icons text-base mr-1">edit_note</span>
+                            本機草稿 (未存雲端)
+                          </span>
+                        ) : null}
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
 
-          {/* 右側欄：作品檢視與評分面板 */}
-          {activeTeam ? (
-            <div className="flex-1 overflow-y-auto space-y-5 pr-1">
-              
-              {/* 卡片 1: 作品基本資料、外部檔案按鈕與影片播放器 */}
-              <div className="bg-white p-6 rounded-xl border shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3.5">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="px-3 py-1 bg-amber-100 text-amber-900 rounded-lg text-base font-bold">
-                        {activeTeam.category || activeTeam.Category || activeTeam.group_name || activeTeam.Group_Name}
-                      </span>
-                      <span className="text-lg font-bold text-gray-800">
-                        🏫 {activeTeam.school || activeTeam.School}
-                        {(activeTeam.team_name || activeTeam.Team_Name) ? ` 【${activeTeam.team_name || activeTeam.Team_Name}】` : ''}
-                      </span>
-                    </div>
-                    <h2 className={`${uiScale.cardTitle} font-black text-gray-900 mt-2`}>
+                    {/* 作品標題 */}
+                    <h2 className={`${uiScale.cardTitle} font-black text-gray-950 leading-snug`}>
                       {activeTeam.work_title || activeTeam.Work_Title}
                     </h2>
-                  </div>
 
-                  {/* 當前隊伍存檔狀態標示 */}
-                  <div className="text-right shrink-0">
-                    {currentScore.status === 'saved' ? (
-                      <span className="px-3.5 py-2 bg-emerald-50 border border-emerald-300 rounded-xl text-sm sm:text-base text-emerald-900 font-bold flex items-center">
-                        <span className="material-icons text-lg mr-1">cloud_done</span>
-                        已儲存於雲端試算表
-                      </span>
-                    ) : (currentScore.status === 'draft' || currentScore.status === 'modified') ? (
-                      <span className="px-3.5 py-2 bg-amber-50 border border-amber-300 rounded-xl text-sm sm:text-base text-amber-900 font-bold flex items-center">
-                        <span className="material-icons text-lg mr-1">edit_note</span>
-                        本機已暫存草稿 (請記得點下方儲存至雲端)
-                      </span>
+                    {/* 檔案檢視膠囊按鈕群 (直接跟在作品標題下方並列) */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {(activeTeam.MindMap_Link || activeTeam.mindmap_link) ? (
+                        <a
+                          href={activeTeam.MindMap_Link || activeTeam.mindmap_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-sky-50 text-sky-950 rounded-lg border border-sky-300 hover:bg-sky-100 text-sm font-black flex items-center transition shadow-2xs"
+                        >
+                          🧠 Mindomo 心智圖 ↗
+                        </a>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold">無心智圖</span>
+                      )}
+
+                      {(activeTeam.Slides_Link || activeTeam.slides_link) ? (
+                        <a
+                          href={activeTeam.Slides_Link || activeTeam.slides_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-amber-50 text-amber-950 rounded-lg border border-amber-300 hover:bg-amber-100 text-sm font-black flex items-center transition shadow-2xs"
+                        >
+                          📊 簡報檔案 ↗
+                        </a>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold">無簡報檔</span>
+                      )}
+
+                      {rawVideoUrl && (
+                        <a
+                          href={rawVideoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-red-50 text-red-900 rounded-lg border border-red-300 hover:bg-red-100 text-sm font-black flex items-center transition shadow-2xs"
+                        >
+                          🎬 另開影片播放 ↗
+                        </a>
+                      )}
+
+                      {(activeTeam.Course_Plan_Link || activeTeam.course_plan_link) && (
+                        <a
+                          href={activeTeam.Course_Plan_Link || activeTeam.course_plan_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-purple-50 text-purple-950 rounded-lg border border-purple-300 hover:bg-purple-100 text-sm font-black flex items-center transition shadow-2xs"
+                        >
+                          📑 校訂課程計畫 PDF ↗
+                        </a>
+                      )}
+
+                      {(activeTeam.Consent_Link || activeTeam.consent_link) && (
+                        <a
+                          href={activeTeam.Consent_Link || activeTeam.consent_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-950 rounded-lg border border-emerald-300 hover:bg-emerald-100 text-sm font-black flex items-center transition shadow-2xs"
+                        >
+                          📝 授權同意書 ↗
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 作品說明 (手風琴展開/收合) */}
+                    {activeDesc ? (
+                      <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 text-sm sm:text-base text-gray-800 space-y-1">
+                        <div className={`whitespace-pre-wrap ${descExpanded ? '' : 'line-clamp-2'}`}>
+                          <strong className="text-gray-900 mr-1">📝 作品說明：</strong>
+                          {activeDesc}
+                        </div>
+                        {activeDesc.length > 50 && (
+                          <button
+                            type="button"
+                            onClick={() => setDescExpanded(!descExpanded)}
+                            className="text-xs sm:text-sm text-amber-900 font-bold flex items-center pt-0.5 hover:underline cursor-pointer"
+                          >
+                            <span className="material-icons text-base mr-0.5">
+                              {descExpanded ? 'expand_less' : 'expand_more'}
+                            </span>
+                            {descExpanded ? '收合作品說明' : '展開完整作品說明'}
+                          </button>
+                        )}
+                      </div>
                     ) : null}
                   </div>
-                </div>
 
-                {/* 作品說明 (手風琴展開/收合) */}
-                {activeDesc ? (
-                  <div className={`bg-gray-50 p-4 rounded-xl border ${uiScale.cardBody} space-y-1.5`}>
-                    <div className={`text-gray-800 whitespace-pre-wrap ${descExpanded ? '' : 'line-clamp-3'}`}>
-                      <strong className="text-gray-900 mr-1">📝 作品說明：</strong>
-                      {activeDesc}
+                  {/* 影片播放區 (純淨播放器，無冗贅警語) */}
+                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center">
+                        <span className="material-icons text-red-600 mr-1.5 text-2xl">smart_display</span>
+                        參賽作品發表影片
+                      </h3>
+                      {rawVideoUrl && (
+                        <a
+                          href={rawVideoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs sm:text-sm text-red-700 hover:text-red-900 font-bold flex items-center hover:underline"
+                        >
+                          另開視窗觀看 ↗
+                        </a>
+                      )}
                     </div>
-                    {activeDesc.length > 60 && (
-                      <button
-                        type="button"
-                        onClick={() => setDescExpanded(!descExpanded)}
-                        className="text-base text-amber-900 font-bold flex items-center pt-1 hover:underline cursor-pointer"
-                      >
-                        <span className="material-icons text-lg mr-0.5">
-                          {descExpanded ? 'expand_less' : 'expand_more'}
-                        </span>
-                        {descExpanded ? '收合作品說明' : '展開完整作品說明'}
-                      </button>
+
+                    {embedUrl ? (
+                      <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-md border border-gray-300">
+                        <iframe
+                          src={embedUrl}
+                          title="參賽作品發表影片"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center bg-gray-50 border rounded-xl text-gray-500 font-bold text-base">
+                        ⚠️ 此隊伍尚未提供發表影片連結
+                      </div>
                     )}
                   </div>
-                ) : (
-                  <div className="text-base text-gray-400 italic">無提供作品說明文字</div>
-                )}
-
-                {/* 參賽檔案連結按鈕列 */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <span className="text-base font-bold text-gray-800 mr-1">📂 作品檔案檢視：</span>
-                  
-                  {(activeTeam.MindMap_Link || activeTeam.mindmap_link) ? (
-                    <a
-                      href={activeTeam.MindMap_Link || activeTeam.mindmap_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2.5 bg-sky-50 text-sky-900 rounded-xl border border-sky-300 hover:bg-sky-100 text-base font-bold flex items-center transition shadow-2xs"
-                    >
-                      🧠 Mindomo 心智圖 ↗
-                    </a>
-                  ) : (
-                    <span className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm">無心智圖</span>
-                  )}
-
-                  {(activeTeam.Slides_Link || activeTeam.slides_link) ? (
-                    <a
-                      href={activeTeam.Slides_Link || activeTeam.slides_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2.5 bg-amber-50 text-amber-900 rounded-xl border border-amber-300 hover:bg-amber-100 text-base font-bold flex items-center transition shadow-2xs"
-                    >
-                      📊 簡報檔案 ↗
-                    </a>
-                  ) : (
-                    <span className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm">無簡報檔</span>
-                  )}
-
-                  {(activeTeam.Course_Plan_Link || activeTeam.course_plan_link) ? (
-                    <a
-                      href={activeTeam.Course_Plan_Link || activeTeam.course_plan_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2.5 bg-purple-50 text-purple-900 rounded-xl border border-purple-300 hover:bg-purple-100 text-base font-bold flex items-center transition shadow-2xs"
-                    >
-                      📑 校訂課程計畫 PDF ↗
-                    </a>
-                  ) : (
-                    String(activeTeam.category || activeTeam.group_name || '').includes('校訂課程') && (
-                      <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-bold">⚠️ 未附校訂課程計畫</span>
-                    )
-                  )}
                 </div>
 
-                {/* 影片播放區：雙重保險 */}
-                <div className="pt-2 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-red-50/70 p-4 rounded-xl border border-red-200">
-                    <div className="flex items-center space-x-2.5">
-                      <span className="material-icons text-red-600 text-3xl">smart_display</span>
+                {/* 右半部 (xl:col-span-6)：指標評量、特色推薦、評語與提交 */}
+                <div className="xl:col-span-6 space-y-4">
+                  {/* 四項指標配分評量 */}
+                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3.5">
                       <div>
-                        <span className="text-base font-bold text-gray-900 block">參賽作品發表影片 (5~8分鐘)</span>
-                        <span className="text-sm text-gray-700">若下方內嵌畫面因雲端權限無法直接播放，請點擊右側紅色大按鈕於新視窗全螢幕觀看</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center">
+                            <span className="material-icons text-amber-900 mr-1.5 text-xl">tune</span>
+                            四項指標配分評量
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setRubricDrawerOpen(true)}
+                            className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-xs sm:text-sm font-bold flex items-center transition cursor-pointer"
+                          >
+                            <span className="material-icons text-base mr-1">help_outline</span>
+                            評分規準細項
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 合計總分卡 */}
+                      <div className="text-right bg-amber-50 px-4 py-2 rounded-xl border-2 border-amber-300 shrink-0">
+                        <span className="text-xs font-bold text-amber-900 block">目前合計總分</span>
+                        <div className="text-2xl sm:text-3xl font-black text-amber-900">
+                          {calculateTotal(currentScore)} <span className="text-sm font-bold text-gray-600">/ 100 分</span>
+                        </div>
                       </div>
                     </div>
-                    {rawVideoUrl ? (
-                      <a
-                        href={rawVideoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-base font-black flex items-center justify-center shadow-sm transition shrink-0"
-                      >
-                        🎬 點此另開大視窗全螢幕看影片 ↗
-                      </a>
-                    ) : (
-                      <span className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-base font-bold">
-                        ⚠️ 此隊伍未提供影片連結
-                      </span>
-                    )}
-                  </div>
 
-                  {embedUrl && (
-                    <div className="aspect-video w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-md border border-gray-300">
-                      <iframe
-                        src={embedUrl}
-                        title="參賽作品發表影片"
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        allowFullScreen
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+                    {/* 四項指標清單 (文字簡潔，Hover 顯示詳細指標) */}
+                    <div className="space-y-3.5">
+                      {[
+                        {
+                          key: 'score_content',
+                          label: '一、簡報內容',
+                          max: 40,
+                          ticks: [0, 10, 20, 30, 40],
+                          desc: '輔助材料完整性(10%)、資料考證與邏輯(10%)、觀點獨特性與創新(10%)、主題切合度(5%)、心智圖解說運用(5%)'
+                        },
+                        {
+                          key: 'score_expression',
+                          label: '二、表達能力',
+                          max: 30,
+                          ticks: [0, 10, 15, 20, 25, 30],
+                          desc: '內容內化程度與情感渲染力(10%)、口語流暢度與語速節奏(10%)、敘事架構與邏輯技巧(10%)'
+                        },
+                        {
+                          key: 'score_stage',
+                          label: '三、台風表現',
+                          max: 20,
+                          ticks: [0, 5, 10, 15, 20],
+                          desc: '自信與說服力、鏡頭眼神交流、肢體語言與團隊合作默契(15%)、時間掌控 5~8 分鐘(5%)'
+                        },
+                        {
+                          key: 'score_technique',
+                          label: '四、製作技巧',
+                          max: 10,
+                          ticks: [0, 2, 4, 6, 8, 10],
+                          desc: '影片剪輯流暢度、鏡頭運用、簡報排版視覺美感，以及資料引用出處、CC授權與AI標示規範(10%)'
+                        }
+                      ].map(item => {
+                        const val = Number(currentScore[item.key] ?? 0);
+                        return (
+                          <div key={item.key} className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                            <div className="flex justify-between items-center gap-2">
+                              <div className="flex items-center">
+                                <span className={`${uiScale.sliderLabel} font-black text-gray-900`}>
+                                  {item.label}
+                                </span>
+                                {/* Hover Tooltip 顯示詳細規準 */}
+                                <div className="relative group inline-flex items-center ml-1.5 cursor-help">
+                                  <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
+                                  <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                                    💡 評分細項參考：<br />{item.desc}
+                                  </div>
+                                </div>
+                              </div>
 
-              {/* 卡片 2: 四大指標配分直觀制 (40 / 30 / 20 / 10 = 100分) */}
-              <div className="bg-white p-6 rounded-xl border shadow-xs space-y-5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="font-black text-gray-900 text-xl sm:text-2xl flex items-center">
-                        <span className="material-icons text-amber-900 mr-1.5 text-2xl">tune</span>
-                        四項指標配分評量 (滿分 100 分)
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => setRubricDrawerOpen(true)}
-                        className="px-3.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-base font-bold flex items-center transition cursor-pointer"
-                      >
-                        <span className="material-icons text-lg mr-1">help_outline</span>
-                        對照評分規準細項
-                      </button>
-                    </div>
-                    <p className="text-base text-gray-600 mt-1">
-                      各項滑桿拉到最右即為該項最高滿分（40分 + 30分 + 20分 + 10分 = 100分）
-                    </p>
-                  </div>
+                              {/* 微調輸入框 */}
+                              <div className="flex items-center space-x-1 shrink-0 bg-white p-1 rounded-lg border shadow-2xs">
+                                <button
+                                  type="button"
+                                  onClick={() => updateScoreField(item.key, val - 1)}
+                                  className="w-8 h-8 rounded bg-gray-100 hover:bg-gray-200 text-base font-black flex items-center justify-center cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={item.max}
+                                  step="0.5"
+                                  value={val}
+                                  onChange={(e) => updateScoreField(item.key, e.target.value)}
+                                  className={`${uiScale.sliderInput} text-center font-black text-amber-900 bg-white focus:outline-none`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => updateScoreField(item.key, val + 1)}
+                                  className="w-8 h-8 rounded bg-gray-100 hover:bg-gray-200 text-base font-black flex items-center justify-center cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
 
-                  <div className="text-right bg-amber-50 px-6 py-3 rounded-xl border-2 border-amber-300 shrink-0">
-                    <span className="text-sm font-bold text-amber-900 block">目前合計總分</span>
-                    <div className="text-3xl sm:text-4xl font-black text-amber-900">
-                      {calculateTotal(currentScore)} <span className="text-base font-bold">/ 100 分</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {[
-                    {
-                      key: 'score_content',
-                      label: '一、簡報內容 (最高 40 分)',
-                      max: 40,
-                      ticks: [0, 10, 20, 30, 40],
-                      desc: '輔助材料完整性(10%)、資料考證與邏輯(10%)、觀點獨特性與創新(10%)、主題切合度(5%)、心智圖解說運用(5%)'
-                    },
-                    {
-                      key: 'score_expression',
-                      label: '二、表達能力 (最高 30 分)',
-                      max: 30,
-                      ticks: [0, 10, 15, 20, 25, 30],
-                      desc: '內容內化程度與情感渲染力(10%)、口語流暢度與語速節奏(10%)、敘事架構與邏輯技巧(10%)'
-                    },
-                    {
-                      key: 'score_stage',
-                      label: '三、台風表現 (最高 20 分)',
-                      max: 20,
-                      ticks: [0, 5, 10, 15, 20],
-                      desc: '自信與說服力、鏡頭眼神交流、肢體語言與團隊合作默契(15%)、時間掌控 5~8 分鐘(5%)'
-                    },
-                    {
-                      key: 'score_technique',
-                      label: '四、製作技巧 (最高 10 分)',
-                      max: 10,
-                      ticks: [0, 2, 4, 6, 8, 10],
-                      desc: '影片剪輯流暢度、鏡頭運用、簡報排版視覺美感，以及資料引用出處、CC授權與AI標示規範(10%)'
-                    }
-                  ].map(item => {
-                    const val = Number(currentScore[item.key] ?? 0);
-                    return (
-                      <div key={item.key} className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="space-y-1">
-                            <div className={`${uiScale.sliderLabel} font-black text-gray-900`}>{item.label}</div>
-                            <div className={`${uiScale.sliderDesc} text-gray-700`}>{item.desc}</div>
-                          </div>
-                          <div className="flex items-center space-x-1.5 shrink-0 bg-white p-1 rounded-lg border shadow-2xs">
-                            <button
-                              type="button"
-                              onClick={() => updateScoreField(item.key, val - 1)}
-                              className="w-9 h-9 rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-black flex items-center justify-center cursor-pointer"
-                            >
-                              -
-                            </button>
+                            {/* 拉桿與刻度 */}
                             <input
-                              type="number"
+                              type="range"
                               min="0"
                               max={item.max}
                               step="0.5"
                               value={val}
                               onChange={(e) => updateScoreField(item.key, e.target.value)}
-                              className={`${uiScale.sliderInput} text-center font-black text-amber-900 bg-white focus:outline-none`}
+                              className="w-full h-2.5 accent-amber-900 cursor-pointer"
                             />
-                            <button
-                              type="button"
-                              onClick={() => updateScoreField(item.key, val + 1)}
-                              className="w-9 h-9 rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-black flex items-center justify-center cursor-pointer"
-                            >
-                              +
-                            </button>
+                            <div className="flex justify-between text-xs text-gray-500 font-bold font-mono px-0.5">
+                              {item.ticks.map(tk => (
+                                <span key={tk}>{tk}分</span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-
-                        <input
-                          type="range"
-                          min="0"
-                          max={item.max}
-                          step="0.5"
-                          value={val}
-                          onChange={(e) => updateScoreField(item.key, e.target.value)}
-                          className="w-full h-3 accent-amber-900 cursor-pointer"
-                        />
-                        <div className="flex justify-between text-sm text-gray-600 font-bold font-mono px-0.5">
-                          {item.ticks.map(tk => (
-                            <span key={tk}>{tk}分</span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 卡片 3: 質性評語與特色推薦 + 儲存區 */}
-              <div className="bg-white p-6 rounded-xl border shadow-xs space-y-4">
-                <h3 className="font-black text-gray-900 text-xl flex items-center">
-                  <span className="material-icons text-amber-900 mr-1.5 text-2xl">rate_review</span>
-                  質性評語與 115 特色表現獎推薦
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="md:col-span-1 space-y-2">
-                    <label className="block text-base font-bold text-gray-800">
-                      ✨ 特色表現獎推薦 (選填)
-                    </label>
-                    <select
-                      value={currentScore.award || ''}
-                      onChange={(e) => updateScoreField('award', e.target.value)}
-                      className="w-full p-3.5 text-base sm:text-lg border rounded-xl bg-white font-bold text-gray-900 shadow-2xs"
-                    >
-                      <option value="">-- 無特別推薦 --</option>
-                      <option value="簡報之星">✨ 簡報之星</option>
-                      <option value="學習之星">✨ 學習之星</option>
-                    </select>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      若該隊伍未獲特優/優等，但表現亮眼或達良好水平，可推薦角逐特色表現獎（供決審評審會議討論之提名建議，不列印於個人評分表）。
-                    </p>
-                  </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="block text-base font-bold text-gray-800">
-                      💬 評審評語與寶貴建議 <span className="text-gray-600 font-normal">(將完整呈現於評分總表並匿名提供參賽學生參考)</span>
-                    </label>
-                    <textarea
-                      rows="4"
-                      value={currentScore.comment || ''}
-                      onChange={(e) => updateScoreField('comment', e.target.value)}
-                      placeholder="請輸入對參賽學生的鼓勵、作品亮點或具體改進建議..."
-                      className={`w-full p-3.5 ${uiScale.commentText} border rounded-xl focus:ring-2 focus:ring-amber-900 focus:outline-none`}
-                    />
-                  </div>
-                </div>
-
-                {/* 底部提交操作列 */}
-                <div className="pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div className="text-base space-y-1">
-                    {currentScore.status === 'saved' ? (
-                      <span className="text-emerald-800 font-bold flex items-center">
-                        🟢 此隊伍分數已安全儲存於雲端試算表 (總分：{calculateTotal(currentScore)} 分)
-                      </span>
-                    ) : (
-                      <span className="text-amber-900 font-bold flex items-center">
-                        🟡 您已調整評分 (已自動暫存於本機)，請點擊右側按鈕正式寫入雲端試算表！
-                      </span>
-                    )}
-                    <div className="text-sm text-gray-600 font-medium">
-                      📌 評審完本組全部隊伍後，請點選網頁最上方「<strong>本組評分總表 (簽名單)</strong>」進行列印與簽名。
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleSubmitScore(false)}
-                    disabled={saving}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-white font-black text-base sm:text-lg shadow-lg hover:opacity-95 transition flex items-center justify-center cursor-pointer shrink-0"
-                    style={{ backgroundColor: 'var(--secondary)' }}
-                  >
-                    <span className={`material-icons text-xl mr-2 ${saving ? 'animate-spin' : ''}`}>
-                      {saving ? 'sync' : 'cloud_upload'}
-                    </span>
-                    {saving ? '正在寫入雲端試算表...' : '儲存並提交本隊評分'}
-                  </button>
-                </div>
-              </div>
+                  {/* 質性評語與特色推薦 + 儲存提交 */}
+                  <div className="bg-white p-5 rounded-xl border shadow-xs space-y-4">
+                    <h3 className="font-black text-gray-900 text-lg sm:text-xl flex items-center border-b pb-2.5">
+                      <span className="material-icons text-amber-900 mr-1.5 text-xl">rate_review</span>
+                      質性評語與特色推薦
+                    </h3>
 
+                    {/* 特色表現獎推薦 (修正說明文字，改為 Hover 提示) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center">
+                        <label className="text-sm sm:text-base font-bold text-gray-900">
+                          ✨ 特色表現獎推薦 (選填)
+                        </label>
+                        <div className="relative group inline-flex items-center ml-1.5 cursor-help">
+                          <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
+                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-80 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                            💡 推薦規則：<br />
+                            • 表現亮眼或達優良水準者，推薦為「<strong>簡報之星</strong>」<br />
+                            • 具備良好參與水準與學習態度者，推薦為「<strong>學習之星</strong>」<br />
+                            （決審時將優先從簡報之星中推薦特優或優等）
+                          </div>
+                        </div>
+                      </div>
+                      <select
+                        value={currentScore.award || ''}
+                        onChange={(e) => updateScoreField('award', e.target.value)}
+                        className="w-full p-2.5 text-base border rounded-xl bg-white font-bold text-gray-900 shadow-2xs focus:ring-2 focus:ring-amber-900 focus:outline-none"
+                      >
+                        <option value="">-- 無特別推薦 --</option>
+                        <option value="簡報之星">✨ 簡報之星 (表現亮眼 / 達優良水準)</option>
+                        <option value="學習之星">🏅 學習之星 (具備參與水準)</option>
+                      </select>
+                    </div>
+
+                    {/* 評審評語與建議 (說明文字改為 Hover 提示) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center">
+                        <label className="text-sm sm:text-base font-bold text-gray-900">
+                          💬 評審評語與寶貴建議
+                        </label>
+                        <div className="relative group inline-flex items-center ml-1.5 cursor-help">
+                          <span className="material-icons text-base text-stone-400 group-hover:text-amber-900 transition-colors">info_outline</span>
+                          <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-72 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed font-normal">
+                            💡 評語將完整呈現於評分總表，並匿名提供參賽學生作為學習反饋。
+                          </div>
+                        </div>
+                      </div>
+                      <textarea
+                        rows="3"
+                        value={currentScore.comment || ''}
+                        onChange={(e) => updateScoreField('comment', e.target.value)}
+                        placeholder="請輸入對參賽學生的鼓勵、作品亮點或具體改進建議..."
+                        className={`w-full p-3 ${uiScale.commentText} border rounded-xl focus:ring-2 focus:ring-amber-900 focus:outline-none`}
+                      />
+                    </div>
+
+                    {/* 底部提交操作列 */}
+                    <div className="pt-3 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+                      <div className="text-xs sm:text-sm space-y-0.5">
+                        {currentScore.status === 'saved' ? (
+                          <span className="text-emerald-800 font-bold flex items-center">
+                            🟢 此隊伍評分已安全儲存於雲端 (總分：{calculateTotal(currentScore)} 分)
+                          </span>
+                        ) : (
+                          <span className="text-amber-900 font-bold flex items-center">
+                            🟡 已調整評分 (已暫存本機)，請點擊右側儲存寫入雲端！
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSubmitScore(false)}
+                        disabled={saving}
+                        className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-black text-base shadow-md hover:opacity-95 transition flex items-center justify-center cursor-pointer shrink-0"
+                        style={{ backgroundColor: 'var(--secondary)' }}
+                      >
+                        <span className={`material-icons text-xl mr-1.5 ${saving ? 'animate-spin' : ''}`}>
+                          {saving ? 'sync' : 'cloud_upload'}
+                        </span>
+                        {saving ? '正在寫入雲端試算表...' : '評分完成，儲存並提交評分'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
           ) : (
             <div className="flex-1 bg-white rounded-xl border flex items-center justify-center text-gray-500 text-lg font-bold">
-              請從左側列表點選參賽隊伍開始評分
+              請從上方選單切換隊伍開始評分
             </div>
           )}
         </div>
