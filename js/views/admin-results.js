@@ -841,21 +841,21 @@ window.AdminResultsView = function() {
           </h2>
         </div>
 
-        {/* 12欄寬度配比：大幅加寬評語欄（各14%），精簡得獎欄（7.5%與6.5%），總和嚴格100% */}
+        {/* 12欄寬度配比：評語大幅擴展至近60%（各19.67%），精簡標題(11%)、分數序位(4%/3%)與獎項欄(各3.5%)，總和嚴格100% */}
         <table className="w-full border-collapse judge-print-table text-black" style={{ border: '2px solid #000', tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: '15%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
+            <col style={{ width: '11%' }} />
             <col style={{ width: '4%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '7.5%' }} />
-            <col style={{ width: '6.5%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '3%' }} />
+            <col style={{ width: '19.67%' }} />
+            <col style={{ width: '19.67%' }} />
+            <col style={{ width: '19.66%' }} />
+            <col style={{ width: '3.5%' }} />
+            <col style={{ width: '3.5%' }} />
           </colgroup>
           <thead>
             <tr className={`${fontStyles.tableHeader} font-black text-center print-text-base`}>
@@ -902,16 +902,16 @@ window.AdminResultsView = function() {
                 </th>
               ))}
               <th
-                className="p-1 border border-black"
+                className="p-1 border border-black text-center"
                 style={{ backgroundColor: '#F5D6D6' }}
               >
-                特色表現獎
+                特色<br />表現獎
               </th>
               <th
-                className="p-1 border border-black"
+                className="p-1 border border-black text-center"
                 style={{ backgroundColor: '#F5D6D6' }}
               >
-                特色優選獎
+                特色<br />優選獎
               </th>
             </tr>
           </thead>
@@ -1113,7 +1113,7 @@ window.AdminResultsView = function() {
                           <span className="text-gray-400 text-xs italic">（無評語）</span>
                         )}
                         {jd.award_rec && (
-                          <div className="mt-1">
+                          <div className="no-print mt-1">
                             <span className={`inline-block px-1.5 py-0.2 rounded-full text-xs font-bold border print-text-sm ${
                               jd.award_rec.includes('簡報之星')
                                 ? 'bg-teal-100 text-teal-950 border-teal-400'
@@ -1146,8 +1146,14 @@ window.AdminResultsView = function() {
                         </select>
                       </div>
 
-                      <span className="only-print-inline print-text-base font-black whitespace-nowrap">
-                        {dec.feature_award || ''}
+                      <span className="only-print-inline print-text-sm font-black leading-tight text-center block">
+                        {dec.feature_award === '簡報之星' ? (
+                          <>簡報<br />之星</>
+                        ) : dec.feature_award === '學習之星' ? (
+                          <>學習<br />之星</>
+                        ) : (
+                          dec.feature_award || ''
+                        )}
                       </span>
                     </td>
 
@@ -1171,7 +1177,7 @@ window.AdminResultsView = function() {
                         </select>
                       </div>
 
-                      <span className="only-print-inline print-text-base font-black whitespace-nowrap">
+                      <span className="only-print-inline print-text-base font-black text-center block">
                         {dec.rank_award || ''}
                       </span>
                     </td>
