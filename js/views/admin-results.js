@@ -96,8 +96,16 @@ window.AdminResultsView = function() {
 
   const handlePrint = () => {
     setPrintTimestamp(getFormattedPrintTime());
+    const originalTitle = document.title;
+    document.title = `${window.APP_CONFIG.CURRENT_YEAR}簡報達人決審總表_【${selectedCategory}】`;
+    const restoreTitle = () => {
+      document.title = originalTitle;
+      window.removeEventListener('afterprint', restoreTitle);
+    };
+    window.addEventListener('afterprint', restoreTitle);
     setTimeout(() => {
       window.print();
+      setTimeout(restoreTitle, 2000);
     }, 50);
   };
 

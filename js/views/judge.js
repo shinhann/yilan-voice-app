@@ -424,6 +424,18 @@ window.JudgeView = function({ user, onLogout }) {
     setDescExpanded(false);
   };
 
+  const handlePrintScoreSheet = () => {
+    const originalTitle = document.title;
+    document.title = `${window.APP_CONFIG.CURRENT_YEAR}簡報達人評分表_【${selectedGroup}】_評審${judgeCode}_${judgeName}`;
+    const restoreTitle = () => {
+      document.title = originalTitle;
+      window.removeEventListener('afterprint', restoreTitle);
+    };
+    window.addEventListener('afterprint', restoreTitle);
+    window.print();
+    setTimeout(restoreTitle, 2000);
+  };
+
   const getEmbedVideoUrl = (url) => {
     if (!url) return null;
     const str = String(url).trim();
@@ -1410,7 +1422,7 @@ window.JudgeView = function({ user, onLogout }) {
 
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={handlePrintScoreSheet}
                   className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 rounded-xl text-sm font-black flex items-center shadow-sm transition cursor-pointer"
                 >
                   <span className="material-icons text-base mr-1.5">print</span>
