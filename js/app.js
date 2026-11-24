@@ -64,6 +64,7 @@ window.App = function() {
             { id: 'judges', icon: 'badge', label: '評審名單與密碼' },
             { id: 'config', icon: 'settings', label: '系統與比賽設定' },
             { id: 'results', icon: 'assessment', label: '共識會議與成績總表' },
+            { id: 'reports', icon: 'print', label: '列印成績總表' },
             { id: 'health', icon: 'health_and_safety', label: '系統維運/檢測' }
           ].map(tab => {
             const isActive = adminTab === tab.id;
@@ -89,11 +90,12 @@ window.App = function() {
       </div>
 
       {/* 管理端內容裝載 */}
-      <main className={`flex-1 p-4 md:p-6 mx-auto w-full ${adminTab === 'results' ? 'max-w-[1800px]' : 'max-w-7xl'}`}>
+      <main className={`flex-1 p-4 md:p-6 mx-auto w-full ${(adminTab === 'results' || adminTab === 'reports') ? 'max-w-[1800px]' : 'max-w-7xl'}`}>
         {adminTab === 'teams' && <window.AdminTeamsView />}
         {adminTab === 'judges' && <window.AdminJudgesView />}
         {adminTab === 'config' && <window.AdminConfigView />}
         {adminTab === 'results' && <window.AdminResultsView />}
+        {adminTab === 'reports' && <window.AdminReportsView />}
         {adminTab === 'health' && <window.AdminHealthView />}
       </main>
     </div>

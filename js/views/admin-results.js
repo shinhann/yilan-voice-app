@@ -949,12 +949,11 @@ window.AdminResultsView = function() {
                   >
                     {/* 1. 標題 + 純圖示按鈕 */}
                     <td className="p-2 border border-black align-middle text-center">
+                      <div className="text-xs font-bold text-gray-800 mb-1 print-text-sm">
+                        第 {String(idx + 1).padStart(2, '0')} 隊 ｜ {item.school}{item.team_name ? `【${item.team_name}】` : ''}
+                      </div>
                       <div className={`${fontStyles.workTitle} text-gray-950 mb-0.5 print-text-base`}>
                         {item.work_title || '（未填作品名稱）'}
-                      </div>
-                      <div className={`${fontStyles.schoolText} text-amber-950 mb-1.5 print-text-sm`}>
-                        {item.school}
-                        {item.team_name ? `【${item.team_name}】` : ''}
                       </div>
 
                       {/* 純圖示按鈕列 (無贅字，列印時自動隱藏) */}
