@@ -767,7 +767,7 @@ window.AdminReportsView = function() {
               );
             })()}
 
-            {/* 個別評審評分表主體 */}
+            {/* 個別評審評分表主體 (與 judge.js 評審端完全一致之 100% 同規格版型) */}
             <div className="p-4 sm:p-6 overflow-x-auto bg-white">
               {(() => {
                 const currentJudge = judgeList.find(j => j.code === selectedJudgeCode);
@@ -780,188 +780,209 @@ window.AdminReportsView = function() {
                   return c === selectedCategory && (s || v);
                 });
 
-                // 計算該評審序位
+                const calculateTotal = (sc) => {
+                  if (!sc) return 0;
+                  return (Number(sc.score_content) || 0) +
+                         (Number(sc.score_expression) || 0) +
+                         (Number(sc.score_stage) || 0) +
+                         (Number(sc.score_technique) || 0);
+                };
+
+                // 計算該評審組內序位
                 const scoredList = [];
                 groupTeams.forEach(t => {
                   const tid = String(t.team_id || t.Team_ID);
-                  const rec = scores.find(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode);
-                  if (rec && rec.total_score !== undefined && rec.total_score !== '') {
-                    scoredList.push({ tid, score: Number(rec.total_score) });
+                  const sc = scores.find(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode);
+                  if (sc) {
+                    scoredList.push({ tid, total: calculateTotal(sc) });
                   }
                 });
-                scoredList.sort((a, b) => b.score - a.score);
+                scoredList.sort((a, b) => b.total - a.total);
                 const rankMap = {};
-                let curRank = 1;
                 scoredList.forEach((item, idx) => {
-                  if (idx > 0 && item.score < scoredList[idx - 1].score) {
-                    curRank = idx + 1;
+                  if (idx > 0 && item.total === scoredList[idx - 1].total) {
+                    rankMap[item.tid] = rankMap[scoredList[idx - 1].tid];
+                  } else {
+                    rankMap[item.tid] = idx + 1;
                   }
-                  rankMap[item.tid] = curRank;
                 });
 
                 const savedCount = groupTeams.filter(t => {
                   const tid = String(t.team_id || t.Team_ID);
-                  return scores.some(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode && s.total_score !== undefined);
+                  const sc = scores.find(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode);
+                  return sc && (sc.score_content !== undefined && sc.score_content !== '');
                 }).length;
 
                 return (
-                  <div>
-                    <table className="judge-print-table w-full border-collapse border-2 border-black text-black text-sm" style={{ tableLayout: 'fixed' }}>
-                      <colgroup>
-                        <col style={{ width: '20%' }} />
-                        <col style={{ width: '4%' }} />
-                        <col style={{ width: '4%' }} />
-                        <col style={{ width: '4%' }} />
-                        <col style={{ width: '4%' }} />
-                        <col style={{ width: '4.5%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '56%' }} />
-                      </colgroup>
+                  <table className="judge-print-table w-full border-collapse border-2 border-black text-black text-sm" style={{ tableLayout: 'fixed' }}>
+                    {/* 強制 8 欄固定寬度比例：解決瀏覽器列印因第一列 colspan 導致欄寬被等分問題 */}
+                    <colgroup>
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '4%' }} />
+                      <col style={{ width: '4%' }} />
+                      <col style={{ width: '4%' }} />
+                      <col style={{ width: '4%' }} />
+                      <col style={{ width: '4.5%' }} />
+                      <col style={{ width: '3.5%' }} />
+                      <col style={{ width: '56%' }} />
+                    </colgroup>
 
-                      <thead>
-                        <tr style={{ backgroundColor: '#FFFFFF' }}>
-                          <th colSpan={8} className="p-3 border border-black text-left">
-                            <div className="flex flex-col sm:flex-row justify-between items-baseline gap-2">
-                              <span className="text-lg sm:text-xl font-black tracking-wide text-black">
-                                【{selectedCategory}】評分表
-                              </span>
-                              <span className="text-sm font-bold text-black">
-                                115學年度 宜蘭縣瘋學習簡報達人擂台賽 ｜ 評審委員：{judgeName}（代號 {selectedJudgeCode}） ｜ 已評 {savedCount} / 共 {groupTeams.length} 隊
-                              </span>
+                    {/* 跨頁自動重複之表頭 (thead) */}
+                    <thead>
+                      {/* 表頭第一列：組別大標題與評審資訊 */}
+                      <tr style={{ backgroundColor: '#FFFFFF' }}>
+                        <th
+                          colSpan={8}
+                          className="p-3 border border-black text-left"
+                        >
+                          <div className="flex flex-col sm:flex-row justify-between items-baseline gap-2">
+                            <span className="text-lg sm:text-xl font-black tracking-wide text-black">
+                              【{selectedCategory}】評分表
+                            </span>
+                            <span className="text-sm font-bold text-black">
+                              115學年度 宜蘭縣瘋學習簡報達人擂台賽　｜　評審委員：{judgeName}（代號 {selectedJudgeCode}）　｜　已評 {savedCount} / 共 {groupTeams.length} 隊
+                            </span>
+                          </div>
+                        </th>
+                      </tr>
+
+                      {/* 表頭第二列：各欄位名稱 */}
+                      <tr className="text-center font-black text-black">
+                        <th className="p-2.5 border border-black w-[20%]" style={{ backgroundColor: '#F3E5AB' }}>
+                          隊伍與作品標題
+                        </th>
+                        <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
+                          內容<br />40%
+                        </th>
+                        <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
+                          表達能力<br />30%
+                        </th>
+                        <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
+                          臺風表現<br />20%
+                        </th>
+                        <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
+                          製作技巧<br />10%
+                        </th>
+                        <th className="p-2 border border-black w-[4.5%]" style={{ backgroundColor: '#E4DFEC' }}>
+                          分數<br />加總
+                        </th>
+                        <th className="p-2 border border-black w-[3.5%]" style={{ backgroundColor: '#D8E4BC' }}>
+                          序位
+                        </th>
+                        <th className="p-2.5 border border-black w-[56%]" style={{ backgroundColor: '#F2F2F2' }}>
+                          評語
+                        </th>
+                      </tr>
+                    </thead>
+
+                    {/* 跨頁自動重複之頁尾 (tfoot)：防散頁大會標註 */}
+                    <tfoot>
+                      <tr style={{ backgroundColor: '#FFFFFF' }}>
+                        <td colSpan={8} className="p-1.5 border-t border-black text-xs font-bold text-black">
+                          <div className="flex justify-between items-center px-1">
+                            <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedCategory}】評審評分表</span>
+                            <span>評審委員：{judgeName}（代號 {selectedJudgeCode}）</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+
+                    {/* 表格內容列 (依參賽隊伍順序排列 + 斑馬紋交替色) */}
+                    <tbody>
+                      {groupTeams.map((team, idx) => {
+                        const tid = String(team.team_id || team.Team_ID);
+                        const sc = scores.find(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode);
+                        const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#FDF8EC';
+                        const schoolStr = team.school || team.School || '';
+                        const teamNameStr = team.team_name || team.Team_Name || '';
+                        const workTitle = team.work_title || team.Work_Title || '';
+                        const totalVal = sc ? calculateTotal(sc) : 0;
+                        const rankVal = sc ? (rankMap[tid] || '-') : '-';
+
+                        return (
+                          <tr key={tid} style={{ backgroundColor: rowBg }}>
+                            {/* 1. 隊伍序號 + 學校隊伍名稱 (上) + 作品標題 (下) */}
+                            <td className="p-2.5 border border-black align-middle">
+                              <div className="text-xs font-bold text-gray-800 mb-1">
+                                第 {String(idx + 1).padStart(2, '0')} 隊｜{schoolStr}{teamNameStr ? `【${teamNameStr}】` : ''}
+                              </div>
+                              <div className="text-sm sm:text-base font-black text-black leading-snug">
+                                {workTitle}
+                              </div>
+                            </td>
+
+                            {/* 2~5. 四項配分 */}
+                            <td className="p-2 border border-black text-center align-middle font-bold text-sm">
+                              {sc ? sc.score_content : ''}
+                            </td>
+                            <td className="p-2 border border-black text-center align-middle font-bold text-sm">
+                              {sc ? sc.score_expression : ''}
+                            </td>
+                            <td className="p-2 border border-black text-center align-middle font-bold text-sm">
+                              {sc ? sc.score_stage : ''}
+                            </td>
+                            <td className="p-2 border border-black text-center align-middle font-bold text-sm">
+                              {sc ? sc.score_technique : ''}
+                            </td>
+
+                            {/* 6. 分數加總 */}
+                            <td className="p-2 border border-black text-center align-middle font-black text-base">
+                              {sc ? totalVal : 0}
+                            </td>
+
+                            {/* 7. 序位 */}
+                            <td className="p-2 border border-black text-center align-middle font-black text-base">
+                              {rankVal}
+                            </td>
+
+                            {/* 8. 評語 (純淨評語，最大化寬度) */}
+                            <td className="p-2.5 border border-black align-top text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                              {sc && sc.comment ? sc.comment : ''}
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* 防竄改「以下空白」列 */}
+                      <tr style={{ backgroundColor: '#FFFFFF' }}>
+                        <td className="p-2.5 border border-black text-center font-black text-sm tracking-widest">
+                          以下空白
+                        </td>
+                        <td className="p-2 border border-black text-center text-gray-400"></td>
+                        <td className="p-2 border border-black text-center text-gray-400"></td>
+                        <td className="p-2 border border-black text-center text-gray-400"></td>
+                        <td className="p-2 border border-black text-center text-gray-400"></td>
+                        <td className="p-2 border border-black text-center font-bold text-gray-500">0</td>
+                        <td className="p-2 border border-black text-center font-bold text-gray-500">—</td>
+                        <td className="p-2 border border-black text-center text-gray-400">—</td>
+                      </tr>
+
+                      {/* 最下方：請評審委員簽名 (維持只在最後一頁簽署) */}
+                      <tr className="judge-signature-block">
+                        <td
+                          colSpan={2}
+                          className="p-5 border border-black text-center align-middle font-black text-base sm:text-lg"
+                          style={{ backgroundColor: '#F9EBC8' }}
+                        >
+                          請評審委員簽名
+                        </td>
+                        <td
+                          colSpan={6}
+                          className="p-3 border border-black align-top"
+                          style={{ backgroundColor: '#FDF8EC', height: '90px' }}
+                        >
+                          <div className="h-full flex flex-col justify-between" style={{ minHeight: '70px' }}>
+                            <div className="text-xs font-bold text-gray-800 text-left">
+                              評審委員簽章：
                             </div>
-                          </th>
-                        </tr>
-
-                        <tr className="text-center font-black text-black">
-                          <th className="p-2.5 border border-black w-[20%]" style={{ backgroundColor: '#F3E5AB' }}>
-                            隊伍與作品標題
-                          </th>
-                          <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
-                            內容<br />40%
-                          </th>
-                          <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
-                            表達能力<br />30%
-                          </th>
-                          <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
-                            臺風表現<br />20%
-                          </th>
-                          <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
-                            製作技巧<br />10%
-                          </th>
-                          <th className="p-2 border border-black w-[4.5%]" style={{ backgroundColor: '#E4DFEC' }}>
-                            分數<br />加總
-                          </th>
-                          <th className="p-2 border border-black w-[3.5%]" style={{ backgroundColor: '#D8E4BC' }}>
-                            序位
-                          </th>
-                          <th className="p-2.5 border border-black w-[56%]" style={{ backgroundColor: '#F2F2F2' }}>
-                            評語
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tfoot>
-                        <tr style={{ backgroundColor: '#FFFFFF' }}>
-                          <td colSpan={8} className="p-1.5 border-t border-black text-xs font-bold text-black">
-                            <div className="flex justify-between items-center px-1">
-                              <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedCategory}】評審評分表</span>
-                              <span>評審委員：{judgeName}（代號 {selectedJudgeCode}）</span>
+                            <div className="text-xs font-bold text-gray-800 text-right">
+                              日期：中華民國 115 年 　　 月 　　 日
                             </div>
-                          </td>
-                        </tr>
-                      </tfoot>
-
-                      <tbody>
-                        {groupTeams.map((team, idx) => {
-                          const tid = String(team.team_id || team.Team_ID);
-                          const sc = scores.find(s => String(s.team_id) === tid && String(s.judge_code) === selectedJudgeCode);
-                          const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#FDF8EC';
-                          const schoolStr = team.school || team.School || '';
-                          const teamNameStr = team.team_name || team.Team_Name || '';
-                          const workTitle = team.work_title || team.Work_Title || '';
-                          const totalVal = sc ? sc.total_score : '—';
-                          const rankVal = sc ? (rankMap[tid] || '—') : '—';
-
-                          return (
-                            <tr key={tid} style={{ backgroundColor: rowBg }}>
-                              {/* 1. 隊伍序號 + 學校隊伍 + 作品名稱 */}
-                              <td className="p-2.5 border border-black align-middle">
-                                <div className="text-xs font-bold text-gray-800 mb-1">
-                                  第 {String(idx + 1).padStart(2, '0')} 隊 ｜ {schoolStr}{teamNameStr ? `【${teamNameStr}】` : ''}
-                                </div>
-                                <div className="text-sm sm:text-base font-black text-black leading-snug">
-                                  {workTitle}
-                                </div>
-                              </td>
-
-                              {/* 2~5. 四項配分 */}
-                              <td className="p-2 border border-black text-center align-middle font-bold text-sm">
-                                {sc ? sc.score_content : ''}
-                              </td>
-                              <td className="p-2 border border-black text-center align-middle font-bold text-sm">
-                                {sc ? sc.score_expression : ''}
-                              </td>
-                              <td className="p-2 border border-black text-center align-middle font-bold text-sm">
-                                {sc ? sc.score_stage : ''}
-                              </td>
-                              <td className="p-2 border border-black text-center align-middle font-bold text-sm">
-                                {sc ? sc.score_technique : ''}
-                              </td>
-
-                              {/* 6. 分數加總 */}
-                              <td className="p-2 border border-black text-center align-middle font-black text-base" style={{ backgroundColor: '#F2EEF8' }}>
-                                {totalVal}
-                              </td>
-
-                              {/* 7. 序位 */}
-                              <td className="p-2 border border-black text-center align-middle font-black text-base" style={{ backgroundColor: '#EAF1DF' }}>
-                                {rankVal}
-                              </td>
-
-                              {/* 8. 評語 */}
-                              <td className="p-2.5 border border-black align-middle text-left text-xs sm:text-sm leading-relaxed text-gray-900">
-                                {sc && sc.comment ? sc.comment : <span className="text-gray-400 italic">（未填寫評語）</span>}
-                                {sc && sc.award_recommendation && (
-                                  <div className="mt-1 text-xs font-bold text-amber-900">
-                                    ★ 推薦獎項：{sc.award_recommendation}
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-
-                        {/* 以下空白列 */}
-                        <tr className="border-t-2 border-black font-black text-center bg-white">
-                          <td className="p-2 border border-black font-black text-left">以下空白</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                          <td className="p-2 border border-black text-gray-700">—</td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* 簽名欄區塊 (固定於最後一頁防切斷) */}
-                    <div className="judge-signature-block mt-8 pt-4 border-t-2 border-black flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-sm font-bold text-black">
-                      <div className="space-y-1">
-                        <p>主辦單位：宜蘭縣政府教育處 ｜ 承辦單位：宜蘭縣瘋學習推動小組</p>
-                        <p className="text-xs text-gray-600">★ 評審委員評分確認無誤後請於右方親筆簽名，並交由大會工作人員進行成績核對登錄。</p>
-                      </div>
-                      <div className="border border-black p-4 rounded bg-stone-50 min-w-[320px] text-right space-y-3">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-stone-700">評審委員簽章：</span>
-                          <span className="border-b-2 border-black inline-block w-44 h-7"></span>
-                        </div>
-                        <div className="text-xs text-stone-600">
-                          簽署日期：中華民國 115 年 _____ 月 _____ 日
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 );
               })()}
             </div>
