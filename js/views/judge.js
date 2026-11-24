@@ -1430,7 +1430,19 @@ window.JudgeView = function({ user, onLogout }) {
 
             {/* 評分表主體 (螢幕預覽與 A4 橫式列印共用結構) */}
             <div className="p-4 sm:p-6 overflow-x-auto bg-white">
-              <table className="judge-print-table w-full border-collapse border-2 border-black text-black text-sm">
+              <table className="judge-print-table w-full border-collapse border-2 border-black text-black text-sm" style={{ tableLayout: 'fixed' }}>
+                {/* 強制 8 欄固定寬度比例：解決瀏覽器列印因第一列 colspan 導致欄寬被等分問題 */}
+                <colgroup>
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '4%' }} />
+                  <col style={{ width: '4%' }} />
+                  <col style={{ width: '4%' }} />
+                  <col style={{ width: '4%' }} />
+                  <col style={{ width: '4.5%' }} />
+                  <col style={{ width: '3.5%' }} />
+                  <col style={{ width: '56%' }} />
+                </colgroup>
+
                 {/* 跨頁自動重複之表頭 (thead) */}
                 <thead>
                   {/* 表頭第一列：組別大標題與評審資訊 */}
