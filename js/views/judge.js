@@ -1436,7 +1436,7 @@ window.JudgeView = function({ user, onLogout }) {
                   {/* 表頭第一列：組別大標題與評審資訊 */}
                   <tr style={{ backgroundColor: '#FFFFFF' }}>
                     <th
-                      colSpan={isCourseGroup ? 12 : 11}
+                      colSpan={8}
                       className="p-3 border border-black text-left"
                     >
                       <div className="flex flex-col sm:flex-row justify-between items-baseline gap-2">
@@ -1450,48 +1450,46 @@ window.JudgeView = function({ user, onLogout }) {
                     </th>
                   </tr>
 
-                  {/* 表頭第二列：各欄位名稱 (精簡版面：已移除作品說明欄位，大幅精簡頁數) */}
+                  {/* 表頭第二列：各欄位名稱 (已移除無用檔案超連結欄位，評語空間最大化至 56%) */}
                   <tr className="text-center font-black text-black">
-                    <th className="p-2.5 border border-black w-[24%]" style={{ backgroundColor: '#F3E5AB' }}>
+                    <th className="p-2.5 border border-black w-[20%]" style={{ backgroundColor: '#F3E5AB' }}>
                       隊伍與作品標題
                     </th>
-                    {isCourseGroup && (
-                      <th className="p-2 border border-black w-[5%]" style={{ backgroundColor: '#F3E5AB' }}>
-                        校訂<br />課程
-                      </th>
-                    )}
-                    <th className="p-2 border border-black w-[5%]" style={{ backgroundColor: '#F3E5AB' }}>
-                      簡報檔
-                    </th>
-                    <th className="p-2 border border-black w-[6.5%]" style={{ backgroundColor: '#F3E5AB' }}>
-                      Mindomo<br />心智圖
-                    </th>
-                    <th className="p-2 border border-black w-[5%]" style={{ backgroundColor: '#F3E5AB' }}>
-                      影片檔
-                    </th>
-                    <th className="p-2 border border-black w-[5.5%]" style={{ backgroundColor: '#DCE6F1' }}>
+                    <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
                       內容<br />40%
                     </th>
-                    <th className="p-2 border border-black w-[5.5%]" style={{ backgroundColor: '#DCE6F1' }}>
+                    <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
                       表達能力<br />30%
                     </th>
-                    <th className="p-2 border border-black w-[5.5%]" style={{ backgroundColor: '#DCE6F1' }}>
+                    <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
                       臺風表現<br />20%
                     </th>
-                    <th className="p-2 border border-black w-[5.5%]" style={{ backgroundColor: '#DCE6F1' }}>
+                    <th className="p-2 border border-black w-[4%]" style={{ backgroundColor: '#DCE6F1' }}>
                       製作技巧<br />10%
                     </th>
-                    <th className="p-2 border border-black w-[5.5%]" style={{ backgroundColor: '#E4DFEC' }}>
+                    <th className="p-2 border border-black w-[4.5%]" style={{ backgroundColor: '#E4DFEC' }}>
                       分數<br />加總
                     </th>
-                    <th className="p-2 border border-black w-[5%]" style={{ backgroundColor: '#D8E4BC' }}>
+                    <th className="p-2 border border-black w-[3.5%]" style={{ backgroundColor: '#D8E4BC' }}>
                       序位
                     </th>
-                    <th className="p-2.5 border border-black" style={{ backgroundColor: '#F2F2F2' }}>
+                    <th className="p-2.5 border border-black w-[56%]" style={{ backgroundColor: '#F2F2F2' }}>
                       評語
                     </th>
                   </tr>
                 </thead>
+
+                {/* 跨頁自動重複之頁尾 (tfoot)：防散頁大會標註 */}
+                <tfoot>
+                  <tr style={{ backgroundColor: '#FFFFFF' }}>
+                    <td colSpan={8} className="p-1.5 border-t border-black text-xs font-bold text-black">
+                      <div className="flex justify-between items-center px-1">
+                        <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedGroup}】評審評分表</span>
+                        <span>評審委員：{judgeName}（代號 {judgeCode}）</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
 
                 {/* 表格內容列 (依參賽隊伍順序排列 + 斑馬紋交替色) */}
                 <tbody>
@@ -1502,11 +1500,6 @@ window.JudgeView = function({ user, onLogout }) {
                     const schoolStr = team.school || team.School || '';
                     const teamNameStr = team.team_name || team.Team_Name || '';
                     const workTitle = team.work_title || team.Work_Title || '';
-                    const descStr = String(team.description || team.Description || '').trim();
-                    const courseLink = team.Course_Plan_Link || team.course_plan_link || '';
-                    const slidesLink = team.Slides_Link || team.slides_link || '';
-                    const mindmapLink = team.MindMap_Link || team.mindmap_link || '';
-                    const videoLink = team.Video_Link || team.video_link || '';
                     const totalVal = sc ? calculateTotal(sc) : 0;
                     const rankVal = sc ? (rankMap[tid] || '-') : '-';
 
@@ -1522,53 +1515,7 @@ window.JudgeView = function({ user, onLogout }) {
                           </div>
                         </td>
 
-                        {/* 2. 校訂課程 (僅校訂課程組顯示) */}
-                        {isCourseGroup && (
-                          <td className="p-1.5 border border-black text-center align-middle text-xs font-bold">
-                            {courseLink ? (
-                              <a href={courseLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
-                                校訂課程
-                              </a>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                        )}
-
-                        {/* 4. 簡報檔 */}
-                        <td className="p-1.5 border border-black text-center align-middle text-xs font-bold">
-                          {slidesLink ? (
-                            <a href={slidesLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
-                              簡報檔
-                            </a>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-
-                        {/* 5. Mindomo心智圖 */}
-                        <td className="p-1.5 border border-black text-center align-middle text-xs font-bold">
-                          {mindmapLink ? (
-                            <a href={mindmapLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
-                              Mindomo心智圖
-                            </a>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-
-                        {/* 6. 影片檔 */}
-                        <td className="p-1.5 border border-black text-center align-middle text-xs font-bold">
-                          {videoLink ? (
-                            <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
-                              影片檔
-                            </a>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-
-                        {/* 7~10. 四項配分 */}
+                        {/* 2~5. 四項配分 */}
                         <td className="p-2 border border-black text-center align-middle font-bold text-sm">
                           {sc ? sc.score_content : ''}
                         </td>
@@ -1582,17 +1529,17 @@ window.JudgeView = function({ user, onLogout }) {
                           {sc ? sc.score_technique : ''}
                         </td>
 
-                        {/* 11. 分數加總 */}
+                        {/* 6. 分數加總 */}
                         <td className="p-2 border border-black text-center align-middle font-black text-base">
                           {sc ? totalVal : 0}
                         </td>
 
-                        {/* 12. 序位 */}
+                        {/* 7. 序位 */}
                         <td className="p-2 border border-black text-center align-middle font-black text-base">
                           {rankVal}
                         </td>
 
-                        {/* 13. 評語 (純淨評語，不印特色獎推薦) */}
+                        {/* 8. 評語 (純淨評語，最大化寬度) */}
                         <td className="p-2.5 border border-black align-top text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
                           {sc && sc.comment ? sc.comment : ''}
                         </td>
@@ -1605,10 +1552,6 @@ window.JudgeView = function({ user, onLogout }) {
                     <td className="p-2.5 border border-black text-center font-black text-sm tracking-widest">
                       以下空白
                     </td>
-                    {isCourseGroup && <td className="p-2 border border-black text-center text-gray-400">—</td>}
-                    <td className="p-2 border border-black text-center text-gray-400">—</td>
-                    <td className="p-2 border border-black text-center text-gray-400">—</td>
-                    <td className="p-2 border border-black text-center text-gray-400">—</td>
                     <td className="p-2 border border-black text-center text-gray-400"></td>
                     <td className="p-2 border border-black text-center text-gray-400"></td>
                     <td className="p-2 border border-black text-center text-gray-400"></td>
@@ -1618,17 +1561,17 @@ window.JudgeView = function({ user, onLogout }) {
                     <td className="p-2 border border-black text-center text-gray-400">—</td>
                   </tr>
 
-                  {/* 最下方：請評審委員簽名 (左側標籤，右側左上簽章/右下日期) */}
+                  {/* 最下方：請評審委員簽名 (維持只在最後一頁簽署) */}
                   <tr className="judge-signature-block">
                     <td
-                      colSpan={isCourseGroup ? 5 : 4}
+                      colSpan={2}
                       className="p-5 border border-black text-center align-middle font-black text-base sm:text-lg"
                       style={{ backgroundColor: '#F9EBC8' }}
                     >
                       請評審委員簽名
                     </td>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="p-3 border border-black align-top"
                       style={{ backgroundColor: '#FDF8EC', height: '90px' }}
                     >
@@ -1644,12 +1587,6 @@ window.JudgeView = function({ user, onLogout }) {
                   </tr>
                 </tbody>
               </table>
-
-              {/* 列印頁尾：左側競賽標註、右側頁碼 (第 1 頁，共 X 頁) */}
-              <div className="mt-3 flex justify-between items-center text-xs text-black font-bold px-1 print-page-number">
-                <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedGroup}】評分總表</span>
-                <span>第 1 頁，共 {Math.max(1, Math.ceil((filteredTeams.length + 2) / 8))} 頁</span>
-              </div>
             </div>
 
           </div>
