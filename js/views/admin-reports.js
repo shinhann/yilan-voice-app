@@ -24,6 +24,16 @@ window.AdminReportsView = function() {
     '校訂課程國小組': '【學校校訂課程—國小組】'
   };
 
+  // 縣府公文師生名冊專用組別全銜（無括號，符合公文範例格式）
+  const ROSTER_CATEGORY_TITLE_MAP = {
+    '宜蘭在地國中組': '宜蘭在地自然人文特色 國中組',
+    '宜蘭在地國小組': '宜蘭在地自然人文特色 國小組',
+    '環境永續國中組': '環境永續×SDGs及生活裡的永續 國中組',
+    '環境永續國小組': '環境永續×SDGs及生活裡的永續 國小組',
+    '校訂課程國中組': '學校校訂課程 國中組',
+    '校訂課程國小組': '學校校訂課程 國小組'
+  };
+
   const DEFAULT_CATEGORY_JUDGES = {
     '宜蘭在地國中組': ['A', 'B', 'C'],
     '宜蘭在地國小組': ['A', 'B', 'C'],
@@ -33,22 +43,30 @@ window.AdminReportsView = function() {
     '校訂課程國小組': ['G', 'H', 'I']
   };
 
+  // 動態讀取系統設定學年度與當下民國年
+  const currentYear = window.APP_CONFIG?.CURRENT_YEAR || 115;
+  const nowRocYear = Math.max((new Date().getFullYear() - 1911), currentYear);
+
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState([]);
   const [judges, setJudges] = useState([]);
   const [scores, setScores] = useState([]);
   const [decisionsMap, setDecisionsMap] = useState({});
 
-  // 模態視窗狀態：modalType: null | 'county' | 'judge' | 'public'
+  // 模態視窗狀態：modalType: null | 'county' | 'judge' | 'public' | 'roster'
   const [modalType, setModalType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedJudgeCode, setSelectedJudgeCode] = useState('A');
   const [countySortMode, setCountySortMode] = useState('team_seq'); // 'team_seq' (原始隊伍序) | 'rank_sum_asc' (序位法總分排名)
 
+  // 縣府師生名冊篩選開關
+  const [includeTopAwards, setIncludeTopAwards] = useState(true);   // 特優、優等
+  const [includeStarAwards, setIncludeStarAwards] = useState(false); // 簡報之星、學習之星
+
   // 列印時間戳記
   const getFormattedPrintTime = () => {
     const now = new Date();
-    const rocYear = (now.getFullYear() - 1911) > 0 ? (now.getFullYear() - 1911) : (window.APP_CONFIG.CURRENT_YEAR || 115);
+    const rocYear = (now.getFullYear() - 1911) > 0 ? (now.getFullYear() - 1911) : currentYear;
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
     const hh = String(now.getHours()).padStart(2, '0');
@@ -208,6 +226,11 @@ window.AdminReportsView = function() {
         school: String(t.school || t.School || ''),
         team_name: String(t.team_name || t.Team_Name || (t.group_name !== cat ? (t.group_name || t.Group_Name || '') : '')),
         work_title: String(t.work_title || t.Work_Title || ''),
+        student1_name: String(t.student1_name || t.Student1_Name || ''),
+        student2_name: String(t.student2_name || t.Student2_Name || ''),
+        student3_name: String(t.student3_name || t.Student3_Name || ''),
+        teacher1_name: String(t.teacher1_name || t.Teacher1_Name || ''),
+        teacher2_name: String(t.teacher2_name || t.Teacher2_Name || ''),
         judgeDetails,
         avg_score: avgScore,
         rank_sum: rankSum,
@@ -499,6 +522,43 @@ window.AdminReportsView = function() {
         </div>
       </section>
 
+      {/* ==================== 專區 4：📜 縣府核備版 — 獲獎師生正式名冊 ==================== */}
+      <section className="no-print bg-white rounded-2xl border-2 border-indigo-200 p-6 shadow-sm space-y-4">
+        <div className="border-b border-stone-200 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <span className="px-3 py-1 bg-indigo-100 text-indigo-900 rounded-lg text-xs font-black tracking-wider uppercase mr-2">
+              專區四
+            </span>
+            <h3 className="text-xl font-black text-gray-900 inline-block">
+              📜 縣府核備版 — 獲獎師生正式名冊
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              呈報縣府核定獎勵與發布公文專用（A4 直式公文版型・標準標楷體優先）。依報名順序自動彙整各組得獎作品、學校、學生 1~3、指導老師 1~2 及獎項；無報名或無得獎之組別自動略過。
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-indigo-50/60 border border-indigo-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-1">
+            <div className="text-base font-black text-indigo-950">
+              {currentYear}學年度 全縣六大組別獲獎師生總名冊（公文附件格式）
+            </div>
+            <div className="text-xs sm:text-sm text-indigo-800 font-bold">
+              支援自由勾選：「僅列特優／優等」或「全數獲獎（含簡報之星／學習之星）」
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setModalType('roster')}
+            className="w-full md:w-auto px-6 py-3 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl text-sm sm:text-base font-black flex items-center justify-center shadow-md transition cursor-pointer shrink-0"
+          >
+            <span className="material-icons text-lg mr-2">description</span>
+            開啟全縣獲獎師生正式名冊
+          </button>
+        </div>
+      </section>
+
       {/* ========================================================================= */}
       {/* 模態視窗 1：🏛️ 縣府備查版 — 評審決審評分總表 (支援隊伍序 / 名次序即時切換)    */}
       {/* ========================================================================= */}
@@ -657,7 +717,7 @@ window.AdminReportsView = function() {
                         <tr style={{ backgroundColor: '#FFFFFF' }}>
                           <td colSpan={12} className="p-1.5 border-t border-black text-xs font-bold text-black">
                             <div className="flex justify-between items-center px-1">
-                              <span>115學年度 宜蘭縣國民中小學簡報達人擂台賽 — {fullHeading}</span>
+                              <span>{currentYear}學年度 宜蘭縣國民中小學簡報達人擂台賽 — {fullHeading}</span>
                               <span>列印時間：{printTimestamp}</span>
                             </div>
                           </td>
@@ -898,7 +958,7 @@ window.AdminReportsView = function() {
                               【{selectedCategory}】評分表
                             </span>
                             <span className="text-sm font-bold text-black">
-                              115學年度 宜蘭縣瘋學習簡報達人擂台賽　｜　評審委員：{judgeName}（代號 {selectedJudgeCode}）　｜　已評 {savedCount} / 共 {groupTeams.length} 隊
+                              {currentYear}學年度 宜蘭縣瘋學習簡報達人擂台賽　｜　評審委員：{judgeName}（代號 {selectedJudgeCode}）　｜　已評 {savedCount} / 共 {groupTeams.length} 隊
                             </span>
                           </div>
                         </th>
@@ -938,7 +998,7 @@ window.AdminReportsView = function() {
                       <tr style={{ backgroundColor: '#FFFFFF' }}>
                         <td colSpan={8} className="p-1.5 border-t border-black text-xs font-bold text-black">
                           <div className="flex justify-between items-center px-1">
-                            <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedCategory}】評審評分表</span>
+                            <span>{currentYear}學年度 宜蘭縣瘋學習簡報達人擂台賽 — 【{selectedCategory}】評審評分表</span>
                             <span>評審委員：{judgeName}（代號 {selectedJudgeCode}）</span>
                           </div>
                         </td>
@@ -1034,7 +1094,7 @@ window.AdminReportsView = function() {
                               評審委員簽章：
                             </div>
                             <div className="text-xs font-bold text-gray-800 text-right">
-                              日期：中華民國 115 年 　　 月 　　 日
+                              日期：中華民國 {nowRocYear} 年 　　 月 　　 日
                             </div>
                           </div>
                         </td>
@@ -1118,7 +1178,7 @@ window.AdminReportsView = function() {
                     {/* 大會公告榮譽榜標頭 */}
                     <div className="text-center border-b-4 border-amber-500 pb-5 space-y-2">
                       <div className="text-sm sm:text-base font-extrabold tracking-widest text-amber-800">
-                        115學年度 宜蘭縣瘋學習簡報達人擂台賽
+                        {currentYear}學年度 宜蘭縣瘋學習簡報達人擂台賽
                       </div>
                       <h2 className="text-2xl sm:text-4xl font-black text-stone-900 tracking-tight">
                         {selectedCategory} ── 決審得獎榮譽榜
@@ -1311,8 +1371,237 @@ window.AdminReportsView = function() {
                     {/* 大會官方頁尾資訊 */}
                     <div className="pt-6 border-t-2 border-black flex flex-col sm:flex-row justify-between items-center text-xs font-bold text-stone-700">
                       <div>主辦單位：宜蘭縣政府教育處 ｜ 承辦學校：宜蘭縣瘋學習推動小組</div>
-                      <div>中華民國 115 年 11 月 大會決審公布</div>
+                      <div>中華民國 {nowRocYear} 年 {new Date().getMonth() + 1} 月 大會決審公布</div>
                     </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 模態視窗 4：📜 縣府核備版 — 獲獎師生正式名冊 (A4 直式公文版・標準標楷體)      */}
+      {/* ========================================================================= */}
+      {modalType === 'roster' && (
+        <div
+          className="print-sheet-modal-backdrop fixed inset-0 bg-black/80 flex justify-center items-start overflow-y-auto p-4 sm:p-6"
+          style={{ zIndex: 9999 }}
+        >
+          {/* 動態鎖定 A4 直式列印方向 (僅於開啟本公文名冊時生效) */}
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait !important;
+                margin: 12mm 10mm !important;
+              }
+            }
+          `}</style>
+
+          <div className="print-sheet-modal-box bg-white w-full max-w-[1000px] rounded-2xl shadow-2xl border border-gray-300 overflow-hidden my-4 relative">
+            {/* Modal 操作工具列 (列印時隱藏) */}
+            <div className="no-print bg-indigo-950 text-white px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4 sticky top-0 z-50">
+              <div className="flex items-center space-x-3">
+                <span className="material-icons text-indigo-300 text-2xl">description</span>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black">
+                    📜 縣府核備版 ── 獲獎師生正式名冊預覽
+                  </h3>
+                  <p className="text-xs text-indigo-200">
+                    A4 直式公文版型・標準標楷體優先・依各組報名順序排列
+                  </p>
+                </div>
+              </div>
+
+              {/* 納入名單範圍勾選開關 */}
+              <div className="flex flex-wrap items-center gap-3 bg-indigo-900/70 px-3.5 py-2 rounded-xl border border-indigo-700">
+                <span className="text-xs font-bold text-indigo-200">納入範圍：</span>
+                <label className="flex items-center space-x-1.5 cursor-pointer text-xs sm:text-sm font-black text-white select-none">
+                  <input
+                    type="checkbox"
+                    checked={includeTopAwards}
+                    onChange={(e) => setIncludeTopAwards(e.target.checked)}
+                    className="w-4 h-4 accent-amber-400 rounded cursor-pointer"
+                  />
+                  <span>特優、優等</span>
+                </label>
+                <label className="flex items-center space-x-1.5 cursor-pointer text-xs sm:text-sm font-black text-white select-none">
+                  <input
+                    type="checkbox"
+                    checked={includeStarAwards}
+                    onChange={(e) => setIncludeStarAwards(e.target.checked)}
+                    className="w-4 h-4 accent-teal-400 rounded cursor-pointer"
+                  />
+                  <span>簡報之星、學習之星</span>
+                </label>
+              </div>
+
+              {/* 右側：列印與關閉 */}
+              <div className="flex items-center space-x-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    let scopeLabel = '特優優等';
+                    if (includeTopAwards && includeStarAwards) scopeLabel = '全數獲獎含雙星';
+                    else if (!includeTopAwards && includeStarAwards) scopeLabel = '特色表現雙星';
+                    executePrint(`${currentYear}簡報達人縣府核備得獎名單_${scopeLabel}_師生名冊`);
+                  }}
+                  disabled={!includeTopAwards && !includeStarAwards}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-500 text-white rounded-xl text-sm font-black flex items-center shadow-md transition cursor-pointer"
+                >
+                  <span className="material-icons text-base mr-1.5">print</span>
+                  列印 / 另存為 PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalType(null)}
+                  className="px-4 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-sm font-bold flex items-center transition cursor-pointer"
+                >
+                  <span className="material-icons text-base mr-1">close</span>
+                  關閉
+                </button>
+              </div>
+            </div>
+
+            {/* 公文名冊主體 (標準標楷體優先，無標楷體退回黑體) */}
+            <div
+              className="p-6 sm:p-10 bg-white space-y-8 text-black"
+              style={{ fontFamily: '"DFKai-SB", "BiauKai", "標楷體", "Noto Sans TC", sans-serif' }}
+            >
+              {(() => {
+                if (!includeTopAwards && !includeStarAwards) {
+                  return (
+                    <div className="p-12 text-center border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-base">
+                      請至少勾選上方一項獲獎範圍（例如「特優、優等」或「簡報之星、學習之星」）。
+                    </div>
+                  );
+                }
+
+                // 依序整理六大組別之得獎名單，並自動過濾無隊伍或無獲獎組別
+                const categoryBlocks = CATEGORIES.map(cat => {
+                  const processed = getProcessedDataForCategory(cat);
+                  // 嚴格依原始報名順序 (seq_index) 排列
+                  const sorted = [...processed].sort((a, b) => a.seq_index - b.seq_index);
+                  const winners = sorted.filter(item => {
+                    const hasTop = includeTopAwards && (item.rank_award === '特優' || item.rank_award === '優等');
+                    const hasStar = includeStarAwards && (item.feature_award === '簡報之星' || item.feature_award === '學習之星');
+                    return hasTop || hasStar;
+                  });
+                  return {
+                    category: cat,
+                    title: ROSTER_CATEGORY_TITLE_MAP[cat] || cat,
+                    winners
+                  };
+                }).filter(block => block.winners.length > 0);
+
+                if (categoryBlocks.length === 0) {
+                  return (
+                    <div className="p-12 text-center border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-base">
+                      目前各組別在所選條件下尚無已儲存的得獎名單。請先至「共識會議與成績總表」勾選並儲存各組別獎項。
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-8">
+                    {categoryBlocks.map(block => (
+                      <div
+                        key={`roster-${block.category}`}
+                        style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}
+                      >
+                        {/* 三行置中公文標題 (完全仿照照片格式) */}
+                        <div className="text-center mb-2 text-black leading-snug">
+                          <div className="text-base sm:text-lg font-bold">
+                            {currentYear}學年度宜蘭瘋學習－簡報達人擂台賽（{block.title}）
+                          </div>
+                          <div className="text-base sm:text-lg font-bold">
+                            得獎名單
+                          </div>
+                          <div className="text-sm sm:text-base font-bold">
+                            （名單依報名順序排列）
+                          </div>
+                        </div>
+
+                        {/* 9 欄公文標準名冊表格 */}
+                        <table
+                          className="w-full border-collapse border border-black text-black text-xs sm:text-sm"
+                          style={{ tableLayout: 'fixed', border: '1.5px solid #000' }}
+                        >
+                          <colgroup>
+                            <col style={{ width: '5%' }} />
+                            <col style={{ width: '27%' }} />
+                            <col style={{ width: '13%' }} />
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '9%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '8%' }} />
+                          </colgroup>
+
+                          <thead>
+                            <tr className="text-center font-bold" style={{ backgroundColor: '#F2F2F2' }}>
+                              <th className="p-1.5 border border-black leading-tight">序<br />號</th>
+                              <th className="p-1.5 border border-black">標題</th>
+                              <th className="p-1.5 border border-black">學校名稱</th>
+                              <th className="p-1.5 border border-black">學生1</th>
+                              <th className="p-1.5 border border-black">學生2</th>
+                              <th className="p-1.5 border border-black">學生3</th>
+                              <th className="p-1.5 border border-black leading-tight">指導<br />老師1</th>
+                              <th className="p-1.5 border border-black leading-tight">指導<br />老師2</th>
+                              <th className="p-1.5 border border-black">獎項</th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {block.winners.map((w, wIdx) => {
+                              const awards = [];
+                              if (includeTopAwards && (w.rank_award === '特優' || w.rank_award === '優等')) {
+                                awards.push(w.rank_award);
+                              }
+                              if (includeStarAwards && (w.feature_award === '簡報之星' || w.feature_award === '學習之星')) {
+                                awards.push(w.feature_award);
+                              }
+
+                              return (
+                                <tr key={`r-${w.team_id}`} style={{ backgroundColor: '#FFFFFF' }}>
+                                  <td className="p-1.5 border border-black text-center align-middle font-normal">
+                                    {wIdx + 1}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle leading-snug break-words">
+                                    {w.work_title}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.school}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.student1_name || ''}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.student2_name || ''}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.student3_name || ''}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.teacher1_name || ''}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle">
+                                    {w.teacher2_name || ''}
+                                  </td>
+                                  <td className="p-1.5 border border-black text-center align-middle font-bold leading-tight">
+                                    {awards.map((aw, aIdx) => (
+                                      <div key={aIdx}>{aw}</div>
+                                    ))}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
                   </div>
                 );
               })()}
