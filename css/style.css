@@ -125,10 +125,10 @@ input[type=range] {
   background: #A1887F;
 }
 
-/* 預設隱藏僅列印時顯示之元件 */
+/* 預設隱藏僅列印時顯示之元件 (強制螢幕檢視時隱藏，避免被 Tailwind 工具類別覆寫造成疊字) */
 .only-print,
 .only-print-inline {
-  display: none;
+  display: none !important;
 }
 
 /* =========================================================

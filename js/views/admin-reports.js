@@ -551,18 +551,18 @@ window.AdminReportsView = function() {
                   <div className="consensus-print-container">
                     <table className="w-full border-collapse judge-print-table text-black" style={{ border: '2px solid #000', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '13%' }} />
+                        <col style={{ width: '12%' }} />
                         <col style={{ width: '3.5%' }} />
                         <col style={{ width: '3.5%' }} />
                         <col style={{ width: '3.5%' }} />
                         <col style={{ width: '3.5%' }} />
                         <col style={{ width: '3.5%' }} />
                         <col style={{ width: '3%' }} />
-                        <col style={{ width: '20%' }} />
-                        <col style={{ width: '20%' }} />
-                        <col style={{ width: '19.5%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '3.5%' }} />
+                        <col style={{ width: '18.5%' }} />
+                        <col style={{ width: '18.5%' }} />
+                        <col style={{ width: '18.5%' }} />
+                        <col style={{ width: '5.25%' }} />
+                        <col style={{ width: '5.25%' }} />
                       </colgroup>
 
                       <thead>

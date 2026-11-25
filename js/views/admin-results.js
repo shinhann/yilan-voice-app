@@ -201,7 +201,7 @@ window.AdminResultsView = function() {
         avgScore: 'text-xl font-black',
         rankNum: 'text-xl font-black',
         commentText: 'text-sm leading-relaxed',
-        selectText: 'text-sm py-1.5 px-2'
+        selectText: 'text-xs py-1 px-1.5'
       };
     }
     if (fontScale === 'medium') {
@@ -214,7 +214,7 @@ window.AdminResultsView = function() {
         avgScore: 'text-2xl font-black',
         rankNum: 'text-2xl font-black',
         commentText: 'text-base leading-relaxed',
-        selectText: 'text-base py-2 px-2.5'
+        selectText: 'text-sm py-1.5 px-2'
       };
     }
     // 'large' (預設：大字體)
@@ -227,7 +227,7 @@ window.AdminResultsView = function() {
       avgScore: 'text-[28px] font-black',
       rankNum: 'text-[28px] font-black',
       commentText: 'text-[18px] leading-relaxed font-medium',
-      selectText: 'text-[18px] py-2.5 px-3'
+      selectText: 'text-[15px] py-1.5 px-2'
     };
   }, [fontScale]);
 
@@ -849,7 +849,7 @@ window.AdminResultsView = function() {
           </h2>
         </div>
 
-        {/* 12欄寬度配比：評語大幅擴展至近60%（各19.67%），精簡標題(11%)、分數序位(4%/3%)與獎項欄(各3.5%)，總和嚴格100% */}
+        {/* 12欄寬度配比：評語維持54%超寬空間（各18%），精簡標題(11%)、分數序位(4%/3%)，獎項欄各6%容納完整選單，總和嚴格100% */}
         <table className="w-full border-collapse judge-print-table text-black" style={{ border: '2px solid #000', tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '11%' }} />
@@ -859,11 +859,11 @@ window.AdminResultsView = function() {
             <col style={{ width: '4%' }} />
             <col style={{ width: '4%' }} />
             <col style={{ width: '3%' }} />
-            <col style={{ width: '19.67%' }} />
-            <col style={{ width: '19.67%' }} />
-            <col style={{ width: '19.66%' }} />
-            <col style={{ width: '3.5%' }} />
-            <col style={{ width: '3.5%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '6%' }} />
           </colgroup>
           <thead>
             <tr className={`${fontStyles.tableHeader} font-black text-center print-text-base`}>
@@ -1135,11 +1135,11 @@ window.AdminResultsView = function() {
 
                     {/* 11. 特色表現獎 (簡報之星 / 學習之星) */}
                     <td className="p-1 border border-black text-center align-middle">
-                      <div className="no-print">
+                      <div className="no-print w-full flex justify-center">
                         <select
                           value={dec.feature_award || ''}
                           onChange={(e) => handleDecisionChange(item.team_id, 'feature_award', e.target.value)}
-                          className={`w-full min-w-[88px] rounded-lg font-black border-2 cursor-pointer transition focus:outline-none text-center ${fontStyles.selectText} ${
+                          className={`w-full max-w-[110px] rounded-lg font-black border-2 cursor-pointer transition focus:outline-none text-center ${fontStyles.selectText} ${
                             dec.feature_award === '簡報之星'
                               ? 'bg-teal-100 text-teal-950 border-teal-500'
                               : dec.feature_award === '學習之星'
@@ -1153,7 +1153,7 @@ window.AdminResultsView = function() {
                         </select>
                       </div>
 
-                      <span className="only-print-inline print-text-sm font-black leading-tight text-center block">
+                      <span className="only-print-inline print-text-sm font-black leading-tight text-center">
                         {dec.feature_award === '簡報之星' ? (
                           <>簡報<br />之星</>
                         ) : dec.feature_award === '學習之星' ? (
@@ -1166,11 +1166,11 @@ window.AdminResultsView = function() {
 
                     {/* 12. 特色優選獎 (特優 / 優等) */}
                     <td className="p-1 border border-black text-center align-middle">
-                      <div className="no-print">
+                      <div className="no-print w-full flex justify-center">
                         <select
                           value={dec.rank_award || ''}
                           onChange={(e) => handleDecisionChange(item.team_id, 'rank_award', e.target.value)}
-                          className={`w-full min-w-[80px] rounded-lg font-black border-2 cursor-pointer transition focus:outline-none text-center ${fontStyles.selectText} ${
+                          className={`w-full max-w-[100px] rounded-lg font-black border-2 cursor-pointer transition focus:outline-none text-center ${fontStyles.selectText} ${
                             dec.rank_award === '特優'
                               ? 'bg-yellow-300 text-yellow-950 border-yellow-600'
                               : dec.rank_award === '優等'
@@ -1184,7 +1184,7 @@ window.AdminResultsView = function() {
                         </select>
                       </div>
 
-                      <span className="only-print-inline print-text-base font-black text-center block">
+                      <span className="only-print-inline print-text-base font-black text-center">
                         {dec.rank_award || ''}
                       </span>
                     </td>
