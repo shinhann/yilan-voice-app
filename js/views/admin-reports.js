@@ -1530,14 +1530,14 @@ window.AdminReportsView = function() {
                         >
                           <colgroup>
                             <col style={{ width: '5%' }} />
-                            <col style={{ width: '27%' }} />
-                            <col style={{ width: '13%' }} />
-                            <col style={{ width: '10%' }} />
-                            <col style={{ width: '10%' }} />
-                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '26.5%' }} />
+                            <col style={{ width: '12%' }} />
+                            <col style={{ width: '9.5%' }} />
+                            <col style={{ width: '9.5%' }} />
+                            <col style={{ width: '9.5%' }} />
+                            <col style={{ width: '9.5%' }} />
+                            <col style={{ width: '9.5%' }} />
                             <col style={{ width: '9%' }} />
-                            <col style={{ width: '8%' }} />
-                            <col style={{ width: '8%' }} />
                           </colgroup>
 
                           <thead>
@@ -1575,19 +1575,19 @@ window.AdminReportsView = function() {
                                   <td className="p-1.5 border border-black text-center align-middle">
                                     {w.school}
                                   </td>
-                                  <td className="p-1.5 border border-black text-center align-middle">
+                                  <td className="px-1 py-1.5 border border-black text-center align-middle whitespace-nowrap">
                                     {w.student1_name || ''}
                                   </td>
-                                  <td className="p-1.5 border border-black text-center align-middle">
+                                  <td className="px-1 py-1.5 border border-black text-center align-middle whitespace-nowrap">
                                     {w.student2_name || ''}
                                   </td>
-                                  <td className="p-1.5 border border-black text-center align-middle">
+                                  <td className="px-1 py-1.5 border border-black text-center align-middle whitespace-nowrap">
                                     {w.student3_name || ''}
                                   </td>
-                                  <td className="p-1.5 border border-black text-center align-middle">
+                                  <td className="px-1 py-1.5 border border-black text-center align-middle whitespace-nowrap">
                                     {w.teacher1_name || ''}
                                   </td>
-                                  <td className="p-1.5 border border-black text-center align-middle">
+                                  <td className="px-1 py-1.5 border border-black text-center align-middle whitespace-nowrap">
                                     {w.teacher2_name || ''}
                                   </td>
                                   <td className="p-1.5 border border-black text-center align-middle font-bold leading-tight">
