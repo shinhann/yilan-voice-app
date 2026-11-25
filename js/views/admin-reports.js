@@ -295,6 +295,189 @@ window.AdminReportsView = function() {
     setModalType('public');
   };
 
+  // 4. 取得「縣府核備版獲獎師生名冊」依組別彙整之得獎清單
+  const getRosterCategoryBlocks = () => {
+    if (!includeTopAwards && !includeStarAwards) return [];
+    return CATEGORIES.map(cat => {
+      const processed = getProcessedDataForCategory(cat);
+      // 嚴格依原始報名順序 (seq_index) 排列
+      const sorted = [...processed].sort((a, b) => a.seq_index - b.seq_index);
+      const winners = sorted.filter(item => {
+        const hasTop = includeTopAwards && (item.rank_award === '特優' || item.rank_award === '優等');
+        const hasStar = includeStarAwards && (item.feature_award === '簡報之星' || item.feature_award === '學習之星');
+        return hasTop || hasStar;
+      });
+      return {
+        category: cat,
+        title: ROSTER_CATEGORY_TITLE_MAP[cat] || cat,
+        winners
+      };
+    }).filter(block => block.winners.length > 0);
+  };
+
+  // 5. 匯出 Word 可編輯檔 (.doc) ── 保留標準標楷體、A4 直式公文版型與 9 欄表格結構
+  const handleDownloadRosterWord = () => {
+    const blocks = getRosterCategoryBlocks();
+    if (blocks.length === 0) {
+      alert('目前條件下尚無得獎名單可匯出！');
+      return;
+    }
+
+    const esc = (str) => String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    let scopeLabel = '特優優等';
+    if (includeTopAwards && includeStarAwards) scopeLabel = '全數獲獎含雙星';
+    else if (!includeTopAwards && includeStarAwards) scopeLabel = '特色表現雙星';
+
+    const sectionsHtml = blocks.map((block, bIdx) => {
+      const rowsHtml = block.winners.map((w, wIdx) => {
+        const awards = [];
+        if (includeTopAwards && (w.rank_award === '特優' || w.rank_award === '優等')) {
+          awards.push(w.rank_award);
+        }
+        if (includeStarAwards && (w.feature_award === '簡報之星' || w.feature_award === '學習之星')) {
+          awards.push(w.feature_award);
+        }
+        const awardHtml = awards.map(aw => esc(aw)).join('<br/>');
+
+        return `
+          <tr>
+            <td style="text-align:center;">${wIdx + 1}</td>
+            <td style="text-align:center;">${esc(w.work_title)}</td>
+            <td style="text-align:center;">${esc(w.school)}</td>
+            <td style="text-align:center;">${esc(w.student1_name)}</td>
+            <td style="text-align:center;">${esc(w.student2_name)}</td>
+            <td style="text-align:center;">${esc(w.student3_name)}</td>
+            <td style="text-align:center;">${esc(w.teacher1_name)}</td>
+            <td style="text-align:center;">${esc(w.teacher2_name)}</td>
+            <td style="text-align:center;font-weight:bold;">${awardHtml}</td>
+          </tr>`;
+      }).join('');
+
+      return `
+        <div style="${bIdx > 0 ? 'margin-top:20pt;' : ''}page-break-inside:avoid;">
+          <p class="doc-title">${currentYear}學年度宜蘭瘋學習－簡報達人擂台賽（${esc(block.title)}）</p>
+          <p class="doc-title">得獎名單</p>
+          <p class="doc-subtitle">（名單依報名順序排列）</p>
+          <table class="roster-table" cellspacing="0" cellpadding="4">
+            <colgroup>
+              <col style="width:5%;" />
+              <col style="width:26.5%;" />
+              <col style="width:12%;" />
+              <col style="width:9.5%;" />
+              <col style="width:9.5%;" />
+              <col style="width:9.5%;" />
+              <col style="width:9.5%;" />
+              <col style="width:9.5%;" />
+              <col style="width:9%;" />
+            </colgroup>
+            <thead>
+              <tr style="background-color:#F2F2F2;">
+                <th>序<br/>號</th>
+                <th>標題</th>
+                <th>學校名稱</th>
+                <th>學生1</th>
+                <th>學生2</th>
+                <th>學生3</th>
+                <th>指導<br/>老師1</th>
+                <th>指導<br/>老師2</th>
+                <th>獎項</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>`;
+    }).join('');
+
+    const wordHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:w="urn:schemas-microsoft-com:office:word"
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <title>${currentYear}學年度簡報達人得獎名單</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          @page Section1 {
+            size: 21cm 29.7cm;
+            margin: 1.5cm 1.2cm 1.5cm 1.2cm;
+            mso-page-orientation: portrait;
+          }
+          div.Section1 { page: Section1; }
+          body, p, td, th {
+            font-family: "DFKai-SB", "標楷體", "BiauKai", serif;
+            mso-fareast-font-family: "標楷體";
+            mso-ascii-font-family: "Times New Roman";
+            mso-hansi-font-family: "Times New Roman";
+            color: #000000;
+          }
+          .doc-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.35;
+          }
+          .doc-subtitle {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 0 0 6pt 0;
+            line-height: 1.35;
+          }
+          .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 1pt solid windowtext;
+            font-size: 10.5pt;
+          }
+          .roster-table th, .roster-table td {
+            border: 0.75pt solid windowtext;
+            padding: 4pt 3pt;
+            vertical-align: middle;
+            text-align: center;
+            word-wrap: break-word;
+          }
+          .roster-table th {
+            font-weight: bold;
+            background-color: #F2F2F2;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="Section1">
+          ${sectionsHtml}
+        </div>
+      </body>
+      </html>`;
+
+    const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${currentYear}簡報達人縣府核備得獎名單_${scopeLabel}_師生名冊.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // 評審名冊統計 (A ~ I)
   const judgeList = useMemo(() => {
     const list = [];
@@ -1437,8 +1620,17 @@ window.AdminReportsView = function() {
                 </label>
               </div>
 
-              {/* 右側：列印與關閉 */}
-              <div className="flex items-center space-x-3 shrink-0">
+              {/* 右側：下載 Word、列印 PDF 與關閉 */}
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleDownloadRosterWord}
+                  disabled={!includeTopAwards && !includeStarAwards}
+                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:bg-gray-500 text-white rounded-xl text-sm font-black flex items-center shadow-md transition cursor-pointer"
+                >
+                  <span className="material-icons text-base mr-1.5">article</span>
+                  下載 Word 可編輯檔 (.doc)
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -1478,22 +1670,7 @@ window.AdminReportsView = function() {
                   );
                 }
 
-                // 依序整理六大組別之得獎名單，並自動過濾無隊伍或無獲獎組別
-                const categoryBlocks = CATEGORIES.map(cat => {
-                  const processed = getProcessedDataForCategory(cat);
-                  // 嚴格依原始報名順序 (seq_index) 排列
-                  const sorted = [...processed].sort((a, b) => a.seq_index - b.seq_index);
-                  const winners = sorted.filter(item => {
-                    const hasTop = includeTopAwards && (item.rank_award === '特優' || item.rank_award === '優等');
-                    const hasStar = includeStarAwards && (item.feature_award === '簡報之星' || item.feature_award === '學習之星');
-                    return hasTop || hasStar;
-                  });
-                  return {
-                    category: cat,
-                    title: ROSTER_CATEGORY_TITLE_MAP[cat] || cat,
-                    winners
-                  };
-                }).filter(block => block.winners.length > 0);
+                const categoryBlocks = getRosterCategoryBlocks();
 
                 if (categoryBlocks.length === 0) {
                   return (
