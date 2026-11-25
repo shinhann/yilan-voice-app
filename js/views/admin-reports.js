@@ -43,6 +43,7 @@ window.AdminReportsView = function() {
   const [modalType, setModalType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [selectedJudgeCode, setSelectedJudgeCode] = useState('A');
+  const [countySortMode, setCountySortMode] = useState('team_seq'); // 'team_seq' (原始隊伍序) | 'rank_sum_asc' (序位法總分排名)
 
   // 列印時間戳記
   const getFormattedPrintTime = () => {
@@ -215,23 +216,23 @@ window.AdminReportsView = function() {
       };
     });
 
-    // 計算平均總分排名
-    const byAvg = [...enriched].filter(item => item.avg_score !== null).sort((a, b) => {
-      if (b.avg_score !== a.avg_score) return b.avg_score - a.avg_score;
-      return (a.rank_sum ?? 999) - (b.rank_sum ?? 999);
+    // 計算序位法總分排名 (序位法總分越小名次越前，同序位加總則依平均總分高者在前)
+    const byRankSum = [...enriched].filter(item => item.rank_sum !== null).sort((a, b) => {
+      if (a.rank_sum !== b.rank_sum) return a.rank_sum - b.rank_sum;
+      return (b.avg_score ?? 0) - (a.avg_score ?? 0);
     });
-    const avgRankLookup = {};
-    let curAvgRank = 1;
-    byAvg.forEach((item, i) => {
-      if (i > 0 && item.avg_score < byAvg[i - 1].avg_score) {
-        curAvgRank = i + 1;
+    const sumRankLookup = {};
+    let curSumRank = 1;
+    byRankSum.forEach((item, i) => {
+      if (i > 0 && item.rank_sum > byRankSum[i - 1].rank_sum) {
+        curSumRank = i + 1;
       }
-      avgRankLookup[item.team_id] = curAvgRank;
+      sumRankLookup[item.team_id] = curSumRank;
     });
 
     return enriched.map((item, idx) => ({
       ...item,
-      final_rank: avgRankLookup[item.team_id] ?? (idx + 1)
+      final_rank: sumRankLookup[item.team_id] ?? (idx + 1)
     }));
   };
 
@@ -254,6 +255,7 @@ window.AdminReportsView = function() {
   // 1. 開啟「縣府備查評分總表」
   const openCountyModal = (cat) => {
     setSelectedCategory(cat);
+    setCountySortMode('team_seq');
     setModalType('county');
   };
 
@@ -498,7 +500,7 @@ window.AdminReportsView = function() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 模態視窗 1：🏛️ 縣府備查版 — 評審決審評分總表                                */}
+      {/* 模態視窗 1：🏛️ 縣府備查版 — 評審決審評分總表 (支援隊伍序 / 名次序即時切換)    */}
       {/* ========================================================================= */}
       {modalType === 'county' && (
         <div
@@ -507,7 +509,7 @@ window.AdminReportsView = function() {
         >
           <div className="print-sheet-modal-box bg-white w-full max-w-[1700px] rounded-2xl shadow-2xl border border-gray-300 overflow-hidden my-4 relative">
             {/* Modal 操作工具列 (列印時隱藏) */}
-            <div className="no-print bg-stone-900 text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 sticky top-0 z-50">
+            <div className="no-print bg-stone-900 text-white px-6 py-4 flex flex-col xl:flex-row justify-between items-center gap-4 sticky top-0 z-50">
               <div className="flex items-center space-x-3">
                 <span className="material-icons text-amber-400 text-2xl">account_balance</span>
                 <div>
@@ -520,10 +522,43 @@ window.AdminReportsView = function() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
+              {/* 中間：排序依據切換鈕 (原始隊伍序 vs 序位法總分排名) */}
+              <div className="flex items-center bg-stone-800 p-1 rounded-xl border border-stone-700 shadow-inner">
+                <span className="text-xs font-bold text-stone-400 mr-2 ml-1">排序依據：</span>
                 <button
                   type="button"
-                  onClick={() => executePrint(`${window.APP_CONFIG.CURRENT_YEAR}簡報達人縣府備查評分總表_【${selectedCategory}】`)}
+                  onClick={() => setCountySortMode('team_seq')}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black flex items-center transition cursor-pointer ${
+                    countySortMode === 'team_seq'
+                      ? 'bg-amber-500 text-stone-950 shadow'
+                      : 'text-stone-300 hover:text-white hover:bg-stone-700'
+                  }`}
+                >
+                  <span className="material-icons text-base mr-1">format_list_numbered</span>
+                  依原始隊伍順序
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCountySortMode('rank_sum_asc')}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black flex items-center transition cursor-pointer ${
+                    countySortMode === 'rank_sum_asc'
+                      ? 'bg-amber-500 text-stone-950 shadow'
+                      : 'text-stone-300 hover:text-white hover:bg-stone-700'
+                  }`}
+                >
+                  <span className="material-icons text-base mr-1">military_tech</span>
+                  依序位法總分排名
+                </button>
+              </div>
+
+              {/* 右側：列印與關閉按鈕 */}
+              <div className="flex items-center space-x-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sortSuffix = countySortMode === 'team_seq' ? '隊伍序' : '名次序';
+                    executePrint(`${window.APP_CONFIG.CURRENT_YEAR}簡報達人縣府備查評分總表_【${selectedCategory}】_${sortSuffix}`);
+                  }}
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-black flex items-center shadow-md transition cursor-pointer"
                 >
                   <span className="material-icons text-base mr-1.5">print</span>
@@ -540,50 +575,55 @@ window.AdminReportsView = function() {
               </div>
             </div>
 
-            {/* 縣府備查總表主體 */}
+            {/* 縣府備查總表主體 (100% 吻合共識總表與使用者 PDF 規格) */}
             <div className="p-4 sm:p-6 overflow-x-auto bg-white">
               {(() => {
                 const groupJudges = getJudgesForCategory(selectedCategory);
                 const processed = getProcessedDataForCategory(selectedCategory);
                 const fullHeading = `${CATEGORY_FULL_TITLE_MAP[selectedCategory] || `【${selectedCategory}】`}評分總表`;
 
+                // 依使用者選擇切換排序：'team_seq' (原始隊伍序) 或 'rank_sum_asc' (序位總分名次序)
+                const sortedList = [...processed];
+                if (countySortMode === 'team_seq') {
+                  sortedList.sort((a, b) => a.seq_index - b.seq_index);
+                } else {
+                  sortedList.sort((a, b) => {
+                    if (a.rank_sum !== null && b.rank_sum !== null && a.rank_sum !== b.rank_sum) {
+                      return a.rank_sum - b.rank_sum;
+                    }
+                    return (b.avg_score ?? 0) - (a.avg_score ?? 0);
+                  });
+                }
+
                 return (
-                  <div className="consensus-print-container">
+                  <div className="consensus-print-container bg-white">
+                    {/* 表格上方大標題 (與 PDF 完全一致) */}
+                    <div className="consensus-print-title mb-3 border-b-2 border-black pb-2">
+                      <h2 className="text-2xl md:text-3xl font-black text-black tracking-tight">
+                        {fullHeading}
+                      </h2>
+                    </div>
+
                     <table className="w-full border-collapse judge-print-table text-black" style={{ border: '2px solid #000', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '12%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '3.5%' }} />
-                        <col style={{ width: '3.5%' }} />
+                        <col style={{ width: '11%' }} />
+                        <col style={{ width: '4%' }} />
+                        <col style={{ width: '4%' }} />
+                        <col style={{ width: '4%' }} />
+                        <col style={{ width: '4%' }} />
+                        <col style={{ width: '4%' }} />
                         <col style={{ width: '3%' }} />
-                        <col style={{ width: '18.5%' }} />
-                        <col style={{ width: '18.5%' }} />
-                        <col style={{ width: '18.5%' }} />
-                        <col style={{ width: '5.25%' }} />
-                        <col style={{ width: '5.25%' }} />
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '6%' }} />
+                        <col style={{ width: '6%' }} />
                       </colgroup>
 
                       <thead>
-                        {/* 表頭大標題 */}
-                        <tr style={{ backgroundColor: '#FFFFFF' }}>
-                          <th colSpan={12} className="p-3 border border-black text-left">
-                            <div className="flex flex-col sm:flex-row justify-between items-baseline gap-2">
-                              <span className="text-xl font-black text-black">
-                                {fullHeading}（縣府備查版）
-                              </span>
-                              <span className="text-xs sm:text-sm font-bold text-black">
-                                115學年度 宜蘭縣瘋學習簡報達人擂台賽 ｜ 參賽隊數：共 {processed.length} 隊 ｜ 列印時間：{printTimestamp}
-                              </span>
-                            </div>
-                          </th>
-                        </tr>
-
-                        {/* 欄位標題 */}
                         <tr className="font-black text-center print-text-base">
                           <th className="p-2 border border-black" style={{ backgroundColor: '#F9EBC8' }}>
-                            隊伍與作品標題
+                            標題
                           </th>
                           {groupJudges.map(j => (
                             <th key={j.code} className="p-1.5 border border-black" style={{ backgroundColor: '#F9EBC8' }}>
@@ -617,83 +657,101 @@ window.AdminReportsView = function() {
                         <tr style={{ backgroundColor: '#FFFFFF' }}>
                           <td colSpan={12} className="p-1.5 border-t border-black text-xs font-bold text-black">
                             <div className="flex justify-between items-center px-1">
-                              <span>115學年度 宜蘭縣瘋學習簡報達人擂台賽 ── {selectedCategory} 縣府備查評審總表</span>
-                              <span>大會審定無誤（送縣府核備專用）</span>
+                              <span>115學年度 宜蘭縣國民中小學簡報達人擂台賽 — {fullHeading}</span>
+                              <span>列印時間：{printTimestamp}</span>
                             </div>
                           </td>
                         </tr>
                       </tfoot>
 
                       <tbody>
-                        {processed.map((item, idx) => {
-                          const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#FDF8EC';
+                        {sortedList.map((item, idx) => {
+                          const isTopWinner = item.rank_award === '特優' || item.rank_award === '優等';
                           return (
-                            <tr key={item.team_id} style={{ backgroundColor: rowBg }}>
-                              {/* 1. 隊伍標題 */}
-                              <td className="p-2 border border-black align-middle">
-                                <div className="text-xs font-bold text-gray-800 mb-0.5 print-text-sm">
-                                  第 {String(idx + 1).padStart(2, '0')} 隊 ｜ {item.school}{item.team_name ? `【${item.team_name}】` : ''}
+                            <tr key={item.team_id} className="border-b border-black">
+                              {/* 1. 標題 (隊伍序號 + 學校隊伍 + 作品名稱) */}
+                              <td className="p-2 border border-black align-middle text-center">
+                                <div className="text-xs font-bold text-gray-800 mb-1 print-text-sm">
+                                  第 {String(item.seq_index).padStart(2, '0')} 隊 ｜ {item.school}{item.team_name ? `【${item.team_name}】` : ''}
                                 </div>
-                                <div className="text-sm font-black text-black leading-snug print-text-base">
+                                <div className="font-extrabold text-base text-gray-950 mb-0.5 print-text-base leading-snug">
                                   {item.work_title || '（未填作品名稱）'}
                                 </div>
                               </td>
 
-                              {/* 2~4. 三位評審給分與序位 */}
+                              {/* 2~4. 評審A、B、C給分與序位 (帶琥珀色圓角膠囊標籤) */}
                               {item.judgeDetails.map(jd => (
                                 <td key={`sc-${jd.judge_code}`} className="p-1.5 border border-black text-center align-middle">
-                                  <div className="font-black text-sm text-black">
+                                  <div className="text-gray-950 font-black text-base leading-none print-text-base">
                                     {jd.total_score !== null ? jd.total_score : '—'}
                                   </div>
-                                  <div className="text-[11px] font-bold text-gray-600">
-                                    {jd.rank !== null ? `序位 ${jd.rank}` : ''}
+                                  <div className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs mt-1 print-text-sm">
+                                    {jd.rank !== null ? `序位 ${jd.rank}` : '—'}
                                   </div>
                                 </td>
                               ))}
 
                               {/* 5. 平均總分 */}
-                              <td className="p-1.5 border border-black text-center align-middle font-black text-sm text-blue-900" style={{ backgroundColor: '#EBF1F5' }}>
-                                {item.avg_score !== null ? item.avg_score : '—'}
+                              <td className="p-1.5 border border-black text-center align-middle bg-sky-50/40">
+                                <div className="font-black text-lg text-gray-900 print-text-base">
+                                  {item.avg_score !== null ? item.avg_score.toFixed(1) : '—'}
+                                </div>
                               </td>
 
                               {/* 6. 序位法總分 */}
-                              <td className="p-1.5 border border-black text-center align-middle font-black text-sm text-stone-900" style={{ backgroundColor: '#F9F9F9' }}>
-                                {item.rank_sum !== null ? item.rank_sum : '—'}
+                              <td className="p-1.5 border border-black text-center align-middle">
+                                <div className="font-black text-lg text-gray-800 print-text-base">
+                                  {item.rank_sum !== null ? item.rank_sum : '—'}
+                                </div>
                               </td>
 
-                              {/* 7. 排名 */}
-                              <td className="p-1.5 border border-black text-center align-middle font-black text-sm text-purple-900" style={{ backgroundColor: '#F4ECF7' }}>
-                                {item.final_rank || '—'}
+                              {/* 7. 排名 (特優/優等亮黃底 #FFF200) */}
+                              <td
+                                className="p-1.5 border border-black text-center align-middle"
+                                style={{
+                                  backgroundColor: isTopWinner ? '#FFF200' : 'transparent'
+                                }}
+                              >
+                                <div className="font-black text-lg text-black print-text-base">
+                                  {item.final_rank}
+                                </div>
                               </td>
 
-                              {/* 8~10. 三位評審評語 */}
+                              {/* 8~10. 三位評審評語 (純淨文字，不含推薦標註) */}
                               {item.judgeDetails.map(jd => (
-                                <td key={`cm-${jd.judge_code}`} className="p-2 border border-black text-left align-middle text-xs leading-relaxed text-gray-950">
-                                  {jd.comment ? jd.comment : <span className="text-gray-400 italic">（無評語）</span>}
-                                  {jd.award_rec && (
-                                    <div className="text-[11px] font-bold text-amber-900 mt-0.5">
-                                      （推薦：{jd.award_rec}）
-                                    </div>
-                                  )}
+                                <td key={`cm-${jd.judge_code}`} className="p-2 border border-black align-middle text-left">
+                                  <div className="text-xs leading-relaxed text-gray-950 whitespace-pre-wrap break-words print-text-sm">
+                                    {jd.comment || '—'}
+                                  </div>
                                 </td>
                               ))}
 
-                              {/* 11. 特色表現獎 */}
-                              <td className="p-1 border border-black text-center align-middle font-black text-xs">
-                                {item.feature_award || '—'}
+                              {/* 11. 特色表現獎 (支援上下折行) */}
+                              <td className="p-1 border border-black text-center align-middle">
+                                <span className="font-black text-sm leading-tight text-center inline-block">
+                                  {item.feature_award === '簡報之星' ? (
+                                    <>簡報<br />之星</>
+                                  ) : item.feature_award === '學習之星' ? (
+                                    <>學習<br />之星</>
+                                  ) : (
+                                    item.feature_award || ''
+                                  )}
+                                </span>
                               </td>
 
-                              {/* 12. 特色優選獎 */}
-                              <td className="p-1 border border-black text-center align-middle font-black text-xs text-amber-950">
-                                {item.rank_award || '—'}
+                              {/* 12. 特色優選獎 (特優 / 優等) */}
+                              <td className="p-1 border border-black text-center align-middle">
+                                <span className="font-black text-base text-center inline-block">
+                                  {item.rank_award || ''}
+                                </span>
                               </td>
                             </tr>
                           );
                         })}
 
-                        {/* 以下空白列 */}
+                        {/* 防竄改「以下空白」列 */}
                         <tr className="border-t-2 border-black font-black text-center bg-white print-text-base">
-                          <td className="p-2 border border-black font-black">以下空白</td>
+                          <td className="p-2 border border-black font-black text-center">以下空白</td>
                           <td className="p-1.5 border border-black text-gray-700">—</td>
                           <td className="p-1.5 border border-black text-gray-700">—</td>
                           <td className="p-1.5 border border-black text-gray-700">—</td>
